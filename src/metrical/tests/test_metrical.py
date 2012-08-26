@@ -79,11 +79,6 @@ class Test_statsd_config_functions(unittest.TestCase):
         from metrical import statsd_client
         self.assertIs(statsd_client(), other_client)
 
-    def test_unsupported_uri(self):
-        from metrical import statsd_client_from_uri
-        with self.assertRaises(ValueError):
-            statsd_client_from_uri('http://localhost:8125')
-
 
 class TestMetric(unittest.TestCase):
 

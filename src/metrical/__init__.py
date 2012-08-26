@@ -55,19 +55,11 @@ def statsd_client():
 
 def set_statsd_client(client_or_uri):
     if isinstance(client_or_uri, basestring):
+        from metrical.statsdclient import statsd_client_from_uri
         client = statsd_client_from_uri(client_or_uri)
     else:
         client = client_or_uri
     _ClientStack.default = client
-
-
-def statsd_client_from_uri(uri):
-    parts = urlparse.urlsplit(uri)
-    if parts.scheme == 'statsd':
-        from metrical.statsdclient import StatsdClient
-        return StatsdClient(parts.hostname, parts.port)
-    else:
-        raise ValueError("URI scheme not supported: %s" % uri)
 
 
 class Metric(object):

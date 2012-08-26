@@ -5,6 +5,25 @@ except ImportError:
     import unittest
 
 
+class Test_statsd_client_from_uri(unittest.TestCase):
+
+    def _call(self, uri):
+        from metrical.statsdclient import statsd_client_from_uri
+        return statsd_client_from_uri(uri)
+
+    def test_local_uri(self):
+        client = self._call('statsd://localhost:8129')
+        self.assertIsNotNone(client.udp_sock)
+
+    def test_unsupported_uri(self):
+        with self.assertRaises(ValueError):
+            self._call('http://localhost:8125')
+
+    def test_with_custom_gauge_suffix(self):
+        client = self._call('statsd://localhost:8129?gauge_suffix=.spamalot')
+        self.assertEqual(client.gauge_suffix, '.spamalot')
+
+
 class TestStatsdClient(unittest.TestCase):
 
     @property
@@ -13,7 +32,7 @@ class TestStatsdClient(unittest.TestCase):
         return StatsdClient
 
     def _make(self, patch_socket=True, error=None):
-        obj = self._class()
+        obj = self._class(gauge_suffix='.testsuffix')
 
         if patch_socket:
             self.sent = sent = []
@@ -46,7 +65,7 @@ class TestStatsdClient(unittest.TestCase):
     def test_gauge_with_sample_rate_1(self):
         obj = self._make()
         obj.gauge('some.thing', 50)
-        self.assertEqual(self.sent, [('some.thing:50|g', obj.addr)])
+        self.assertEqual(self.sent, [('some.thing.testsuffix:50|g', obj.addr)])
 
     def test_gauge_with_sample_rate_too_low(self):
         obj = self._make()
