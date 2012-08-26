@@ -5,7 +5,7 @@ import time
 import urlparse
 
 __all__ = ['metric',
-           'MetricDecorator',
+           'Metric',
            'set_statsd_client',
            'statsd_client',
            'statsd_client_from_uri',
@@ -70,7 +70,8 @@ def statsd_client_from_uri(uri):
         raise ValueError("URI scheme not supported: %s" % uri)
 
 
-class MetricDecorator(object):
+class Metric(object):
+    """A factory of metric decorators."""
 
     def __init__(self, stats=None, sample_rate=1, method=False,
                  count=True, timing=True):
@@ -125,7 +126,7 @@ class MetricDecorator(object):
 
 
 # 'metric' is a function decorator with default options.
-metric = MetricDecorator()
+metric = Metric()
 
 # 'metricmethod' is a method decorator with default options.
-metricmethod = MetricDecorator(method=True)
+metricmethod = Metric(method=True)

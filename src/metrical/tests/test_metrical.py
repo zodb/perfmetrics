@@ -85,7 +85,7 @@ class Test_statsd_config_functions(unittest.TestCase):
             statsd_client_from_uri('http://localhost:8125')
 
 
-class TestMetricDecorator(unittest.TestCase):
+class TestMetric(unittest.TestCase):
 
     def setUp(self):
         from metrical import statsd_client_stack
@@ -109,8 +109,8 @@ class TestMetricDecorator(unittest.TestCase):
 
     @property
     def _class(self):
-        from metrical import MetricDecorator
-        return MetricDecorator
+        from metrical import Metric
+        return Metric
 
     def test_ctor_with_defaults(self):
         obj = self._class()
@@ -198,9 +198,9 @@ class TestMetricDecorator(unittest.TestCase):
     def test_decorate_with_options(self):
         args = []
 
-        from metrical import MetricDecorator
+        from metrical import Metric
 
-        @MetricDecorator('spammy', sample_rate=0.1, timing=False)
+        @Metric('spammy', sample_rate=0.1, timing=False)
         def spam(x, y=2):
             args.append((x, y))
 
