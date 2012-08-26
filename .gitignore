@@ -1,0 +1,7 @@
+.coverage
+.pydevproject
+bin
+include
+lib
+local
+man
