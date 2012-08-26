@@ -1,6 +1,10 @@
+*.pyc
+*.egg-info
+*.so
 .coverage
 .pydevproject
 bin
+build
 include
 lib
 local
