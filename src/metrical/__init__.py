@@ -9,6 +9,7 @@ __all__ = ['metric',
            'set_statsd_client',
            'statsd_client',
            'statsd_client_from_uri',
+           'statsd_client_stack',
            ]
 
 
