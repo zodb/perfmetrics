@@ -16,10 +16,10 @@ well in threaded (synchronous) or event-driven (asynchronous) software.
 Usage
 -----
 
-Use the @metric and @metricmethod decorators to alter functions and methods
-so they send timing and call statistics to Statsd.  Add the decorators
-to any function or method that could be a signficant bottleneck, including
-library functions.
+Use the ``@metric`` and ``@metricmethod`` decorators to alter functions
+and methods so they send timing and call statistics to Statsd.
+Add the decorators to any function or method that could be a signficant
+bottleneck, including library functions.
 
 .. testcode::
 
