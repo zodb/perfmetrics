@@ -21,7 +21,7 @@ and methods so they send timing and call statistics to Statsd.
 Add the decorators to any function or method that could be a signficant
 bottleneck, including library functions.
 
-.. testcode::
+Sample::
 
 	from perfmetrics import metric
 	from perfmetrics import metricmethod
@@ -36,11 +36,9 @@ bottleneck, including library functions.
     	    """Do some other possibly expensive thing"""
 
 Next, tell perfmetrics how to connect to Statsd.  (Until you do, the
-perfmetrics package does not collect or send any metrics.)  Ideally,
-your application should read the Statsd URI from a configuration file
-at startup time, but this example uses a hard-coded URI for simplicity.
-
-.. testcode::
+decorators have no effect.)  Ideally, your application should read the
+Statsd URI from a configuration file at startup time, but the example
+below uses a hard-coded URI for simplicity::
 
     from perfmetrics import set_statsd_client
     set_statsd_client('statsd://localhost:8125')
@@ -104,7 +102,7 @@ decorator instead of ``metric`` or ``metricmethod``.  The example below
 uses a static metric name and a sample rate.  It also disables the collection
 of timing information, which can take a few nanoseconds to compute.
 
-.. testcode::
+Sample::
 
 	@Metric('frequent_func', sample_rate=0.1, timing=False)
 	def frequent_func():
