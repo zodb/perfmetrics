@@ -8,7 +8,7 @@ except ImportError:
 class Test_ClientStack(unittest.TestCase):
     @property
     def _class(self):
-        from metrical.clientstack import ClientStack
+        from perfmetrics.clientstack import ClientStack
         return ClientStack
 
     def test_ctor(self):

@@ -15,13 +15,11 @@ class ClientStack(threading.local):
     default = None
 
     def __init__(self):
-        self.stack = stack = []
+        self.stack = []
 
-        # Optimization: this closure is faster than a method. ;-)
-        def get():
-            return stack[-1] if stack else self.default
-
-        self.get = get
+    def get(self):
+        stack = self.stack
+        return stack[-1] if stack else self.default
 
     def push(self, obj):
         self.stack.append(obj)

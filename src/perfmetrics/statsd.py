@@ -1,7 +1,4 @@
 
-from decorator import decorator
-from metrical.clientstack import client_stack
-from time import time
 import logging
 import random
 import socket
@@ -92,65 +89,3 @@ class StatsdClient(object):
             self.udp_sock.sendto('\n'.join(buf), self.addr)
         except IOError:
             self.log.exception("Failed to send UDP packet")
-
-
-class Metric(object):
-    """A factory of metric decorators."""
-
-    def __init__(self, stat=None, sample_rate=1, method=False,
-                 count=True, timing=True):
-        self.stat = stat
-        self.sample_rate = sample_rate
-        self.method = method
-        self.count = count
-        self.timing = timing
-
-    def __call__(self, f):
-        """Decorate a function or method so it can send statistics to statsd.
-        """
-        func_name = f.__name__
-        func_full_name = '%s.%s' % (f.__module__, func_name)
-
-        instance_stat = self.stat
-        sample_rate = self.sample_rate
-        method = self.method
-        count = self.count
-        timing = self.timing
-
-        def call_with_metric(_func, *args, **kw):
-            client = client_stack.get()
-            if client is None:
-                # No statsd client has been configured.
-                return f(*args, **kw)
-
-            if instance_stat:
-                stat = instance_stat
-            elif method:
-                cls = args[0].__class__
-                stat = '%s.%s.%s' % (cls.__module__, cls.__name__, func_name)
-            else:
-                stat = func_full_name
-
-            if timing:
-                if count:
-                    buf = []
-                    client.change(stat, 1, sample_rate, buf=buf)
-                else:
-                    buf = None
-                start = time()
-                try:
-                    return f(*args, **kw)
-                finally:
-                    elapsed_ms = int((time() - start) * 1000.0)
-                    client.timing(stat, elapsed_ms, sample_rate, buf=buf)
-                    if buf:
-                        client.sendbuf(buf)
-
-            else:
-                if count:
-                    client.change(stat, 1, sample_rate)
-                return f(*args, **kw)
-
-        # Create a signature-preserving decorator.
-        # (functools.update_wrapper preserves the name but not the signature.)
-        return decorator(call_with_metric, f)
