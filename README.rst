@@ -114,14 +114,14 @@ of timing information, which can take a few nanoseconds to compute.
 Functions
 ~~~~~~~~~
 
-- ``statsd_client()``: Return the currently configured ``StatsdClient``.
+``statsd_client()``: Return the currently configured ``StatsdClient``.
 Returns the thread-local client if there is one, or the global client
 if there is one, or None.
 
-- ``set_statsd_client(client_or_uri)``: Set the global StatsdClient.  The
+``set_statsd_client(client_or_uri)``: Set the global StatsdClient.  The
 ``client_or_uri`` can be a StatsdClient, a ``statsd://`` URI, or None.
 
-- ``statsd_client_from_uri(uri)``: Create a ``StatsdClient`` from a URI.
+``statsd_client_from_uri(uri)``: Create a ``StatsdClient`` from a URI.
 A typical URI is ``statsd://localhost:8125``.  An optional
 query parameter is ``gauge_suffix``.  The default gauge_suffix
 is ``.<host_name>``.  See the ``StatsdClient`` documentation for
@@ -141,13 +141,13 @@ the size of UDP packets is limited (the limit varies by the network, but
 1000 bytes is usually a good guess) and any extra bytes will be ignored
 silently.
 
-- ``timing(stat, time, sample_rate=1, buf=None)``: Log timing information.
+``timing(stat, time, sample_rate=1, buf=None)``: Log timing information.
 ``stat`` is the name of the metric to record and ``time`` is how long
 the measured item took in milliseconds.  Note that
 Statsd maintains several data points for each timing metric, so timing
 metrics are more expensive than counters or gauges.
 
-- ``gauge(stat, value, suffix=None, sample_rate=1, buf=None)``:
+``gauge(stat, value, suffix=None, sample_rate=1, buf=None)``:
 Update a gauge value.
 ``stat`` is the name of the metric to record and ``value`` is the new
 gauge value.  Because gauges from different machines often conflict, a
@@ -155,14 +155,14 @@ suffix is applied to all gauge names.  The default gauge_suffix is based
 on the host name.  If the ``suffix`` parameter is not None, it overrides
 the default suffix.
 
-- ``inc(stat, sample_rate=1, buf=None``: Increment a counter.
+``inc(stat, sample_rate=1, buf=None``: Increment a counter.
 
-- ``dec(stat, sample_rate=1, buf=None``: Decrement a counter.
+``dec(stat, sample_rate=1, buf=None``: Decrement a counter.
 
-- ``change(stat, delta, sample_rate=1, buf=None)``: Change a counter by an
+``change(stat, delta, sample_rate=1, buf=None)``: Change a counter by an
 arbitrary amount.  Note that Statsd clears all counter values every time
 it sends the metrics to Graphite, which usually happens every 10 seconds.
 If you need a persistent value, it may be more appropriate to use a ``gauge``
 instead.
 
-- ``sendbuf(buf)``: Send the contents of the ``buf`` list to Statsd.
+``sendbuf(buf)``: Send the contents of the ``buf`` list to Statsd.
