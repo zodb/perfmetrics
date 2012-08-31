@@ -6,20 +6,20 @@ The perfmetrics package provides a simple way to add software performance
 metrics to Python libraries and applications.  Use perfmetrics to find the
 true bottlenecks in a production application.
 
-The perfmetrics package is a client of the ``statsd`` daemon by Etsy, which
+The perfmetrics package is a client of the Statsd daemon by Etsy, which
 is in turn a client of Graphite (specifically, the Carbon daemon).  Because
-the perfmetrics package sends UDP packets to statsd, the overhead of
-perfmetrics is negligible and it can work in either threaded (synchronous) or
-event-driven (asynchronous) programs.
+the perfmetrics package sends UDP packets to Statsd, perfmetrics adds
+no I/O delays and only minimal CPU overhead.  It can work equally
+well in threaded (synchronous) or event-driven (asynchronous) software.
 
 
 Usage
 -----
 
 Use the @metric and @metricmethod decorators to alter functions and methods
-so they can send timing and call statistics to statsd.  Add the decorators
-to anything that might be a signficant bottleneck, including library
-functions.
+so they send timing and call statistics to Statsd.  Add the decorators
+to any function or method that could be a signficant bottleneck, including
+library functions.
 
 .. testcode::
 
@@ -35,10 +35,10 @@ functions.
     	def mymethod(self):
     	    """Do some other possibly expensive thing"""
 
-Next, tell perfmetrics how to connect to statsd.  (Until you do, the
+Next, tell perfmetrics how to connect to Statsd.  (Until you do, the
 perfmetrics package does not collect or send any metrics.)  Ideally,
-your application should read the statsd URI from a configuration file,
-but this example uses a hard-coded URI for simplicity.
+your application should read the Statsd URI from a configuration file
+at startup time, but this example uses a hard-coded URI for simplicity.
 
 .. testcode::
 
@@ -50,14 +50,14 @@ but this example uses a hard-coded URI for simplicity.
         MyClass().mymethod()
 
 If you run that code, it will fire 2000 UDP packets at port
-8125.  However, unless you have already installed Graphite and statsd,
+8125.  However, unless you have already installed Graphite and Statsd,
 all of those packets will be ignored and dropped.  This is a good thing:
 you don't want your production application to fail or slow down just
 because your performance monitoring software is stopped or not working.
 
-Install Graphite and statsd to receive and graph the metrics.  One good way
-to install Graphite is the `graphite_buildout example`_, which can install
-Graphite without root access.
+Install Graphite and Statsd to receive and graph the metrics.  One good way
+to install them is the `graphite_buildout example`_ at github, which
+installs Graphite and Statsd in a custom location without root access.
 
 .. _`graphite_buildout example`: https://github.com/hathawsh/graphite_buildout
 
@@ -66,11 +66,11 @@ Threading
 ---------
 
 While most programs send statistics from any thread to a single global
-statsd server, some programs need to use a different statsd server
-for each thread.  If you only need a global statsd server, use the
+Statsd server, some programs need to use a different Statsd server
+for each thread.  If you only need a global Statsd server, use the
 ``set_statsd_client`` function.  If you need to use a different statsd
 server for each thread, use the ``statsd_client_stack`` object, which
-supports the ``push``, ``pop``, and ``clear`` methods.
+has the ``push``, ``pop``, and ``clear`` methods.
 
 
 Reference Documentation
@@ -79,9 +79,9 @@ Reference Documentation
 Decorators
 ~~~~~~~~~~
 
-``@metric``: Notifies statsd using UDP every time the function is called.
+``@metric``: Notifies Statsd using UDP every time the function is called.
 Sends both call counts and timing information.  The name of the metric
-sent to statsd is ``<module>.<function name>``.
+sent to Statsd is ``<module>.<function name>``.
 
 ``@metricmethod``: like ``metric``, but the name of the metric is
 ``<class module>.<class name>.<method name>``.
@@ -90,13 +90,13 @@ sent to statsd is ``<module>.<function name>``.
 A decorator with options.
 ``stat`` is the name of the metric to send; set it to None to use
 the name of the function or method.
-``sample_rate`` lets you reduce the number of packets sent to statsd
+``sample_rate`` lets you reduce the number of packets sent to Statsd
 by selecting a random sample; for example, set it to 0.1 to send
 one tenth of the packets.
 If the ``method`` parameter is true, the default metric name is based on
 the method's class name rather than the module name.
-Setting ``count`` to False disables the counter statistics sent to statsd.
-Setting ``timing`` to False disables the timing statistics sent to statsd.
+Setting ``count`` to False disables the counter statistics sent to Statsd.
+Setting ``timing`` to False disables the timing statistics sent to Statsd.
 
 If you need to decorate a frequently called function or method,
 minimize the decorator's overhead using options of the ``Metric``
@@ -131,6 +131,10 @@ more information about ``gauge_suffix``.
 StatsdClient Methods
 ~~~~~~~~~~~~~~~~~~~~
 
+Application code can send custom metrics by first getting the current
+``StatsdClient`` using the ``statsd_client()`` method.  Note that
+``statsd_client()`` may return None.
+
 Most of the methods below have optional ``sample_rate`` and ``buf``
 parameters.  The ``sample_rate`` parameter, when set to a value less than
 1, causes StatsdClient to send a random sample of packets rather than every
@@ -145,7 +149,7 @@ silently.
 ``stat`` is the name of the metric to record and ``time`` is how long
 the measured item took in milliseconds.  Note that
 Statsd maintains several data points for each timing metric, so timing
-metrics are more expensive than counters or gauges.
+metrics can be more expensive than counters or gauges.
 
 ``gauge(stat, value, suffix=None, sample_rate=1, buf=None)``:
 Update a gauge value.
