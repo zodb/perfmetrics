@@ -79,10 +79,9 @@ class Metric(object):
         method = self.method
         count = self.count
         timing = self.timing
-        _statsd_client_stack = statsd_client_stack
 
         def call_with_metric(*args, **kw):
-            stack = _statsd_client_stack.stack
+            stack = statsd_client_stack.stack
             client = stack[-1] if stack else client_stack.default
             if client is None:
                 # No statsd client has been configured.

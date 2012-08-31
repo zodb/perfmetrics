@@ -77,14 +77,14 @@ class StatsdClient(object):
             buf.append(s)
 
     def send(self, data):
-        """Send a UDP packet."""
+        """Send a UDP packet containing a string."""
         try:
             self.udp_sock.sendto(data, self.addr)
         except IOError:
             self.log.exception("Failed to send UDP packet")
 
     def sendbuf(self, buf):
-        """Send a UDP packet containing buffered lines."""
+        """Send a UDP packet containing string lines."""
         try:
             self.udp_sock.sendto('\n'.join(buf), self.addr)
         except IOError:

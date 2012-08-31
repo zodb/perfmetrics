@@ -76,9 +76,13 @@ class TestMetric(unittest.TestCase):
         class DummyStatsdClient:
             def change(self, stat, delta, sample_rate, buf=None):
                 changes.append((stat, delta, sample_rate, buf))
+                if buf is not None:
+                    buf.append('count_line')
 
             def timing(self, stat, ms, sample_rate, buf=None):
                 timing.append((stat, ms, sample_rate, buf))
+                if buf is not None:
+                    buf.append('timing_line')
 
             def sendbuf(self, buf):
                 sentbufs.append(buf)
@@ -119,13 +123,21 @@ class TestMetric(unittest.TestCase):
         self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
-        self.assertEqual(self.changes, [(__name__ + '.spam', 1, 1, [])])
+
+        stat, delta, sample_rate, buf = self.changes[0]
+        self.assertEqual(stat, __name__ + '.spam')
+        self.assertEqual(delta, 1)
+        self.assertEqual(sample_rate, 1)
+        self.assertEqual(buf, ['count_line', 'timing_line'])
+
         self.assertEqual(len(self.timing), 1)
         stat, ms, sample_rate, _buf = self.timing[0]
         self.assertEqual(stat, __name__ + '.spam')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(sample_rate, 1)
+
+        self.assertEqual(self.sentbufs, [['count_line', 'timing_line']])
 
     def test_decorate_method(self):
         args = []
@@ -149,15 +161,24 @@ class TestMetric(unittest.TestCase):
         self._add_client()
         Spam().f(6, 1)
         self.assertEqual(args, [(6, 1)])
-        self.assertEqual(self.changes, [(__name__ + '.Spam.f', 1, 1, [])])
+
+        self.assertEqual(len(self.changes), 1)
+        stat, delta, sample_rate, buf = self.changes[0]
+        self.assertEqual(stat, __name__ + '.Spam.f')
+        self.assertEqual(delta, 1)
+        self.assertEqual(sample_rate, 1)
+        self.assertEqual(buf, ['count_line', 'timing_line'])
+
         self.assertEqual(len(self.timing), 1)
         stat, ms, sample_rate, _buf = self.timing[0]
-        self.assertEqual(stat, 'perfmetrics.tests.test_perfmetrics.Spam.f')
+        self.assertEqual(stat, __name__ + '.Spam.f')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(sample_rate, 1)
 
-    def test_decorate_with_options(self):
+        self.assertEqual(self.sentbufs, [['count_line', 'timing_line']])
+
+    def test_decorate_without_timing(self):
         args = []
         Metric = self._class
 
@@ -177,5 +198,45 @@ class TestMetric(unittest.TestCase):
         self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
-        self.assertEqual(self.changes, [('spammy', 1, 0.1, None)])
+
+        self.assertEqual(len(self.changes), 1)
+        stat, delta, sample_rate, buf = self.changes[0]
+        self.assertEqual(stat, 'spammy')
+        self.assertEqual(delta, 1)
+        self.assertEqual(sample_rate, 0.1)
+        self.assertIsNone(buf)
+
         self.assertEqual(len(self.timing), 0)
+        self.assertEqual(self.sentbufs, [])
+
+    def test_decorate_without_count(self):
+        args = []
+        Metric = self._class
+
+        @Metric(count=False)
+        def spam(x, y=2):
+            args.append((x, y))
+
+        self.assertEqual(spam.__module__, __name__)
+        self.assertEqual(spam.__name__, 'spam')
+
+        # Call with no statsd client configured.
+        spam(4, 5)
+        self.assertEqual(args, [(4, 5)])
+        del args[:]
+
+        # Call with a statsd client configured.
+        self._add_client()
+        spam(6, 1)
+        self.assertEqual(args, [(6, 1)])
+        self.assertEqual(self.changes, [])
+        self.assertEqual(len(self.timing), 1)
+
+        stat, ms, sample_rate, buf = self.timing[0]
+        self.assertEqual(stat, __name__ + '.spam')
+        self.assertGreaterEqual(ms, 0)
+        self.assertLess(ms, 10000)
+        self.assertEqual(sample_rate, 1)
+        self.assertIsNone(buf)
+
+        self.assertEqual(self.sentbufs, [])
