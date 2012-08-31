@@ -3,11 +3,11 @@ import threading
 
 
 class ClientStack(threading.local):
-    """Thread local stack of statsd clients.
+    """Thread local stack of StatsdClients.
 
     Applications and tests can either set the global statsd client using
-    set_statsd_client() or set a statsd client for each thread
-    using statsd_client_stack.push()/.pop().
+    perfmetrics.set_statsd_client() or set a statsd client for each thread
+    using statsd_client_stack.push()/.pop()/.clear().
 
     This is like pyramid.threadlocal but it handles the default differently.
     """

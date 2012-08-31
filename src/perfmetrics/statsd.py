@@ -32,13 +32,15 @@ class StatsdClient(object):
             else:
                 buf.append(s)
 
-    def gauge(self, stat, value, sample_rate=1, buf=None):
+    def gauge(self, stat, value, suffix=None, sample_rate=1, buf=None):
         """Log a gauge value.
 
         >>> client.gauge('pool_size', 5)
         """
         if sample_rate >= 1 or self.random() < sample_rate:
-            s = '%s%s:%s|g' % (stat, self.gauge_suffix, value)
+            if suffix is None:
+                suffix = self.gauge_suffix or ''
+            s = '%s%s:%s|g' % (stat, suffix, value)
             if buf is None:
                 self.send(s)
             else:
@@ -86,6 +88,7 @@ class StatsdClient(object):
     def sendbuf(self, buf):
         """Send a UDP packet containing string lines."""
         try:
-            self.udp_sock.sendto('\n'.join(buf), self.addr)
+            if buf:
+                self.udp_sock.sendto('\n'.join(buf), self.addr)
         except IOError:
             self.log.exception("Failed to send UDP packet")

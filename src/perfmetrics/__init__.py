@@ -25,10 +25,19 @@ statsd_client_stack = client_stack
 
 
 def statsd_client():
+    """Return the current StatsdClient for the thread.
+    
+    Defaults to the global client set by ``set_statsd_client``.
+    """
     return statsd_client_stack.get()
 
 
 def set_statsd_client(client_or_uri):
+    """Set the global StatsdClient.
+    
+    Accepts either a StatsdClient, a Statsd URI, or None (to clear the
+    global client).
+    """
     if isinstance(client_or_uri, basestring):
         client = statsd_client_from_uri(client_or_uri)
     else:
@@ -43,8 +52,9 @@ if 'statsd' not in urlparse.uses_query:
 def statsd_client_from_uri(uri):
     """Create and return StatsdClient.
 
-    >>> from metrical.statsdclient import statsd_client_from_uri
-    >>> client = statsd_client_from_uri('statsd://localhost:8125')
+    A typical URI is ``statsd://localhost:8125``.  An optional
+    query parameter is ``gauge_suffix``.  The default gauge_suffix
+    is ".<current_host_name>".
     """
     parts = urlparse.urlsplit(uri)
     if parts.scheme == 'statsd':
