@@ -19,9 +19,21 @@ setup(
     author_email='shane@hathawaymix.org',
     description='Send performance metrics about Python code to Statsd',
     long_description=README + '\n\n' + CHANGES,
+    # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 3",
+        "License :: Repoze Public License",
+        "Topic :: System :: Monitoring",
+        ],
+    url="https://github.com/hathawsh/perfmetrics",
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=False,
-    test_suite='perfmetrics',
-    install_requires=requires)
+    tests_require=requires + ['nose'],
+    test_suite="nose.collector",
+    install_requires=requires,
+    )
