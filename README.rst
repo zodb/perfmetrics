@@ -17,10 +17,10 @@ software.
 Usage
 =====
 
-Use the ``@metric`` and ``@metricmethod`` decorators to alter functions
-and methods so they can send timing and call statistics to Statsd.
-Add the decorators to any function or method that could be a signficant
-bottleneck, including library functions.
+Use the ``@metric`` and ``@metricmethod`` decorators to wrap functions
+and methods that should send timing and call statistics to Statsd.
+Add the decorators to any function or method that could be a bottleneck,
+including library functions.
 
 Sample::
 
@@ -67,9 +67,10 @@ Threading
 While most programs send metrics from any thread to a single global
 Statsd server, some programs need to use a different Statsd server
 for each thread.  If you only need a global Statsd server, use the
-``set_statsd_client`` function.  If you need to use a different Statsd
-server for each thread, use the ``statsd_client_stack`` object in each
-thread.  Use the ``push``, ``pop``, and ``clear`` methods.
+``set_statsd_client`` function at application startup.  If you need
+to use a different Statsd server for each thread, use the
+``statsd_client_stack`` object in each thread.  Use the
+``push``, ``pop``, and ``clear`` methods.
 
 
 Graphite Tips
@@ -120,11 +121,12 @@ Decorators
     Like ``@metric``, but the name of the Statsd metric is
     ``<class module>.<class name>.<method name>``.
 
-@Metric(stat=None, sample_rate=1, method=False, count=True, timing=True)
-    A decorator with options.
+Metric(stat=None, rate=1, method=False, count=True, timing=True)
+    A decorator or context manager with options.
+
     ``stat`` is the name of the metric to send; set it to None to use
     the name of the function or method.
-    ``sample_rate`` lets you reduce the number of packets sent to Statsd
+    ``rate`` lets you reduce the number of packets sent to Statsd
     by selecting a random sample; for example, set it to 0.1 to send
     one tenth of the packets.
     If the ``method`` parameter is true, the default metric name is based on
@@ -132,18 +134,27 @@ Decorators
     Setting ``count`` to False disables the counter statistics sent to Statsd.
     Setting ``timing`` to False disables the timing statistics sent to Statsd.
 
+    Sample use as a decorator::
+
+        @Metric('frequent_func', rate=0.1, timing=False)
+        def frequent_func():
+            """Do something fast and frequently"""
+
+    Sample use as a context manager::
+
+        def do_something():
+            with Metric('doing_something'):
+                pass
+
     If perfmetrics sends packets too frequently, UDP packets may be lost
     and the application performance may be affected.  You can reduce
     the number of packets and the CPU overhead using the ``Metric``
     decorator with options instead of ``metric`` or ``metricmethod``.
-    The example below uses a sample rate and a static metric name.
+    The decorator example above uses a sample rate and a static metric name.
     It also disables the collection of timing information.
 
-    Sample::
-
-    	@Metric('frequent_func', sample_rate=0.1, timing=False)
-    	def frequent_func():
-    		"""Do something fast and frequently"""
+    When using Metric as a context manager, you must provide the
+    ``stat`` parameter or nothing will be recorded.
 
 
 Functions
@@ -160,8 +171,9 @@ set_statsd_client(client_or_uri)
 
 statsd_client_from_uri(uri)
     Create a ``StatsdClient`` from a URI.
-    A typical URI is ``statsd://localhost:8125``.  An optional
-    query parameter is ``gauge_suffix``.  The default gauge_suffix
+    A typical URI is ``statsd://localhost:8125``.  Supported optional
+    query parameters are ``prefix`` and ``gauge_suffix``.  The default
+    prefix is empty and the default gauge_suffix
     is ``.<host_name>``.  See the ``StatsdClient`` documentation for
     more information about ``gauge_suffix``.
 
@@ -173,8 +185,8 @@ Python code can send custom metrics by first getting the current
 ``StatsdClient`` using the ``statsd_client()`` method.  Note that
 ``statsd_client()`` returns None if no client has been configured.
 
-Most of the methods below have optional ``sample_rate`` and ``buf``
-parameters.  The ``sample_rate`` parameter, when set to a value less than
+Most of the methods below have optional ``rate`` and ``buf``
+parameters.  The ``rate`` parameter, when set to a value less than
 1, causes StatsdClient to send a random sample of packets rather than every
 packet.  If the ``buf`` parameter is a list, StatsdClient appends the packet
 contents to the ``buf`` list rather than send the packet, making it
@@ -183,34 +195,30 @@ the size of UDP packets is limited (the limit varies by the network, but
 1000 bytes is usually a good guess) and any extra bytes will be ignored
 silently.
 
-timing(stat, time, sample_rate=1, buf=None)
+timing(stat, value, rate=1, buf=None)
     Record timing information.
-    ``stat`` is the name of the metric to record and ``time`` is the
+    ``stat`` is the name of the metric to record and ``value`` is the
     timing measurement in milliseconds.  Note that
     Statsd maintains several data points for each timing metric, so timing
     metrics can take more disk space than counters or gauges.
 
-gauge(stat, value, suffix=None, sample_rate=1, buf=None)
+gauge(stat, value, suffix=None, rate=1, buf=None)
     Update a gauge value.
     ``stat`` is the name of the metric to record and ``value`` is the new
     gauge value.  A gauge represents a persistent value such as a pool size.
     Because gauges from different machines often conflict, a
-    suffix is applied to all gauge names.  The default gauge suffix is based
-    on the host name.  If the ``suffix`` parameter is a string (including an
-    empty string), it overrides the default gauge suffix.
+    suffix is usually applied to gauge names.  If the ``suffix``
+    parameter is a string (including an empty string), it overrides the
+    default gauge suffix.
 
-inc(stat, sample_rate=1, buf=None``
-    Increment a counter.
+incr(stat, count=1, rate=1, buf=None)
+    Increment a counter by ``count``.  Note that Statsd clears all counter
+    values every time it sends the metrics to Graphite, which usually
+    happens every 10 seconds.  If you need a persistent value, it may
+    be more appropriate to use a gauge instead of a counter.
 
-dec(stat, sample_rate=1, buf=None``
-    Decrement a counter.
-
-change(stat, delta, sample_rate=1, buf=None)
-    Change a counter by an
-    arbitrary amount.  Note that Statsd clears all counter values every time
-    it sends the metrics to Graphite, which usually happens every 10 seconds.
-    If you need a persistent value, it may be more appropriate to use a ``gauge``
-    instead.
+decr(stat, count=1, rate=1, buf=None)
+    Decrement a counter by ``count``.
 
 sendbuf(buf)
     Send the contents of the ``buf`` list to Statsd.

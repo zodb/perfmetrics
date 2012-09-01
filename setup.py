@@ -14,7 +14,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 setup(
     name='perfmetrics',
-    version='0.9.1',
+    version='0.9.2',
     author='Shane Hathaway',
     author_email='shane@hathawaymix.org',
     description='Send performance metrics about Python code to Statsd',

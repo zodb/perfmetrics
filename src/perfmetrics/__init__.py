@@ -16,7 +16,7 @@ try:  # pragma no cover
     from urllib.parse import parse_qsl
     from urllib.parse import uses_query
 
-    basestring = str
+    basestring = str  # @ReservedAssignment
 
 except ImportError:  # pragma no cover
     # Python 2
@@ -65,8 +65,9 @@ if 'statsd' not in uses_query:
 def statsd_client_from_uri(uri):
     """Create and return StatsdClient.
 
-    A typical URI is ``statsd://localhost:8125``.  An optional
-    query parameter is ``gauge_suffix``.  The default gauge_suffix
+    A typical URI is ``statsd://localhost:8125``.  Optional
+    query parameters are ``prefix`` and ``gauge_suffix``.
+    The default prefix is an empty string; the default gauge_suffix
     is ".<current_host_name>".
     """
     parts = urlsplit(uri)
@@ -81,12 +82,12 @@ def statsd_client_from_uri(uri):
 
 
 class Metric(object):
-    """A factory of metric decorators."""
+    """A factory of metric decorator/context managers."""
 
-    def __init__(self, stat=None, sample_rate=1, method=False,
+    def __init__(self, stat=None, rate=1, method=False,
                  count=True, timing=True):
         self.stat = stat
-        self.sample_rate = sample_rate
+        self.rate = rate
         self.method = method
         self.count = count
         self.timing = timing
@@ -98,7 +99,7 @@ class Metric(object):
         func_full_name = '%s.%s' % (f.__module__, func_name)
 
         instance_stat = self.stat
-        sample_rate = self.sample_rate
+        rate = self.rate
         method = self.method
         count = self.count
         timing = self.timing
@@ -121,7 +122,7 @@ class Metric(object):
             if timing:
                 if count:
                     buf = []
-                    client.change(stat, 1, sample_rate, buf=buf)
+                    client.incr(stat, 1, rate, buf=buf)
                 else:
                     buf = None
                 start = time()
@@ -129,16 +130,37 @@ class Metric(object):
                     return f(*args, **kw)
                 finally:
                     elapsed_ms = int((time() - start) * 1000.0)
-                    client.timing(stat, elapsed_ms, sample_rate, buf=buf)
+                    client.timing(stat, elapsed_ms, rate, buf=buf)
                     if buf:
                         client.sendbuf(buf)
 
             else:
                 if count:
-                    client.change(stat, 1, sample_rate)
+                    client.incr(stat, 1, rate)
                 return f(*args, **kw)
 
         return functools.update_wrapper(call_with_metric, f)
+
+    # Metric can also be used as a context manager.
+
+    def __enter__(self):
+        self.start = time()
+
+    def __exit__(self, _typ, _value, _tb):
+        stack = statsd_client_stack.stack
+        client = stack[-1] if stack else client_stack.default
+        if client is not None:
+            buf = []
+            stat = self.stat
+            if stat:
+                rate = self.rate
+                if self.count:
+                    client.incr(stat, rate=rate, buf=buf)
+                if self.timing:
+                    elapsed = int((time() - self.start) * 1000.0)
+                    client.timing(stat, elapsed, rate=rate, buf=buf)
+                if buf:
+                    client.sendbuf(buf)
 
 
 # 'metric' is a function decorator with default options.
