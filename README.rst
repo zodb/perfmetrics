@@ -64,12 +64,12 @@ installs Graphite and Statsd in a custom location without root access.
 Threading
 =========
 
-While most programs send statistics from any thread to a single global
+While most programs send metrics from any thread to a single global
 Statsd server, some programs need to use a different Statsd server
 for each thread.  If you only need a global Statsd server, use the
-``set_statsd_client`` function.  If you need to use a different statsd
-server for each thread, use the ``statsd_client_stack`` object, which
-has ``push``, ``pop``, and ``clear`` methods.
+``set_statsd_client`` function.  If you need to use a different Statsd
+server for each thread, use the ``statsd_client_stack`` object in each
+thread.  Use the ``push``, ``pop``, and ``clear`` methods.
 
 
 Graphite Tips
