@@ -7,6 +7,7 @@
 bin
 build
 develop-eggs
+dist
 eggs
 include
 lib

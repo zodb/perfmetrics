@@ -1,6 +1,6 @@
 
 Introduction
-------------
+============
 
 The perfmetrics package provides a simple way to add software performance
 metrics to Python libraries and applications.  Use perfmetrics to find the
@@ -9,22 +9,23 @@ true bottlenecks in a production application.
 The perfmetrics package is a client of the Statsd daemon by Etsy, which
 is in turn a client of Graphite (specifically, the Carbon daemon).  Because
 the perfmetrics package sends UDP packets to Statsd, perfmetrics adds
-no I/O delays and only minimal CPU overhead.  It can work equally
-well in threaded (synchronous) or event-driven (asynchronous) software.
+no I/O delays to applications and little CPU overhead.  It can work
+equally well in threaded (synchronous) or event-driven (asynchronous)
+software.
 
 
 Usage
------
+=====
 
 Use the ``@metric`` and ``@metricmethod`` decorators to alter functions
-and methods so they send timing and call statistics to Statsd.
+and methods so they can send timing and call statistics to Statsd.
 Add the decorators to any function or method that could be a signficant
 bottleneck, including library functions.
 
 Sample::
 
-	from perfmetrics import metric
-	from perfmetrics import metricmethod
+    from perfmetrics import metric
+    from perfmetrics import metricmethod
 
     @metric
     def myfunction():
@@ -49,9 +50,9 @@ below uses a hard-coded URI for simplicity::
 
 If you run that code, it will fire 2000 UDP packets at port
 8125.  However, unless you have already installed Graphite and Statsd,
-all of those packets will be ignored and dropped.  This is a good thing:
+all of those packets will be ignored and dropped.  Dropping is a good thing:
 you don't want your production application to fail or slow down just
-because your performance monitoring software is stopped or not working.
+because your performance monitoring system is stopped or not working.
 
 Install Graphite and Statsd to receive and graph the metrics.  One good way
 to install them is the `graphite_buildout example`_ at github, which
@@ -61,77 +62,116 @@ installs Graphite and Statsd in a custom location without root access.
 
 
 Threading
----------
+=========
 
 While most programs send statistics from any thread to a single global
 Statsd server, some programs need to use a different Statsd server
 for each thread.  If you only need a global Statsd server, use the
 ``set_statsd_client`` function.  If you need to use a different statsd
 server for each thread, use the ``statsd_client_stack`` object, which
-has the ``push``, ``pop``, and ``clear`` methods.
+has ``push``, ``pop``, and ``clear`` methods.
+
+
+Graphite Tips
+=============
+
+Graphite stores each metric as a time series with multiple
+resolutions.  The sample graphite_buildout stores 10 second resolution
+for 48 hours, 1 hour resolution for 31 days, and 1 day resolution for 5 years.
+To produce a coarse grained value from a fine grained value, Graphite computes
+the mean value (average) for each time span.
+
+Because Graphite computes mean values implicitly, the most sensible way to
+treat counters in Graphite is as a "hits per second" value.  That way,
+a graph can produce correct results no matter which resolution level
+it uses.
+
+Treating counters as hits per second has unfortunate consequences, however.
+If some metric sees a 1000 hit spike in one second, then falls to zero for
+at least 9 seconds, the Graphite chart for that metric will show a spike
+of 100, not 1000, since Graphite receives metrics every 10 seconds and the
+spike looks to Graphite like 100 hits per second over a 10 second period.
+
+If you want your graph to show 1000 hits rather than 100 hits per second,
+apply the Graphite ``hitcount()`` function, using a resolution of
+10 seconds or more.  The hitcount function converts per-second
+values to approximate raw hit counts.  Be sure
+to provide a resolution value large enough to be represented by at least
+one pixel width on the resulting graph, otherwise Graphite will compute
+averages of hit counts and produce a confusing graph.
+
+It usually makes sense to treat null values in Graphite as zero, though
+that is not the default; by default, Graphite draws nothing for null values.
+You can turn on that option for each graph.
 
 
 Reference Documentation
------------------------
+=======================
 
 Decorators
-~~~~~~~~~~
+----------
 
-``@metric``: Notifies Statsd using UDP every time the function is called.
-Sends both call counts and timing information.  The name of the metric
-sent to Statsd is ``<module>.<function name>``.
+@metric
+    Notifies Statsd using UDP every time the function is called.
+    Sends both call counts and timing information.  The name of the metric
+    sent to Statsd is ``<module>.<function name>``.
 
-``@metricmethod``: like ``metric``, but the name of the metric is
-``<class module>.<class name>.<method name>``.
+@metricmethod
+    Like ``@metric``, but the name of the Statsd metric is
+    ``<class module>.<class name>.<method name>``.
 
-``@Metric(stat=None, sample_rate=1, method=False, count=True, timing=True)``:
-A decorator with options.
-``stat`` is the name of the metric to send; set it to None to use
-the name of the function or method.
-``sample_rate`` lets you reduce the number of packets sent to Statsd
-by selecting a random sample; for example, set it to 0.1 to send
-one tenth of the packets.
-If the ``method`` parameter is true, the default metric name is based on
-the method's class name rather than the module name.
-Setting ``count`` to False disables the counter statistics sent to Statsd.
-Setting ``timing`` to False disables the timing statistics sent to Statsd.
+@Metric(stat=None, sample_rate=1, method=False, count=True, timing=True)
+    A decorator with options.
+    ``stat`` is the name of the metric to send; set it to None to use
+    the name of the function or method.
+    ``sample_rate`` lets you reduce the number of packets sent to Statsd
+    by selecting a random sample; for example, set it to 0.1 to send
+    one tenth of the packets.
+    If the ``method`` parameter is true, the default metric name is based on
+    the method's class name rather than the module name.
+    Setting ``count`` to False disables the counter statistics sent to Statsd.
+    Setting ``timing`` to False disables the timing statistics sent to Statsd.
 
-If you need to decorate a frequently called function or method,
-minimize the decorator's overhead using options of the ``Metric``
-decorator instead of ``metric`` or ``metricmethod``.  The example below
-uses a static metric name and a sample rate.  It also disables the collection
-of timing information, which can take a few nanoseconds to compute.
+    If perfmetrics sends packets too frequently, UDP packets may be lost
+    and the application performance may be affected.  You can reduce
+    the number of packets and the CPU overhead using the ``Metric``
+    decorator with options instead of ``metric`` or ``metricmethod``.
+    The example below uses a sample rate and a static metric name.
+    It also disables the collection of timing information.
 
-Sample::
+    Sample::
 
-	@Metric('frequent_func', sample_rate=0.1, timing=False)
-	def frequent_func():
-		"""Do something fast and frequently"""
+    	@Metric('frequent_func', sample_rate=0.1, timing=False)
+    	def frequent_func():
+    		"""Do something fast and frequently"""
 
 
 Functions
-~~~~~~~~~
+---------
 
-``statsd_client()``: Return the currently configured ``StatsdClient``.
-Returns the thread-local client if there is one, or the global client
-if there is one, or None.
+statsd_client()
+    Return the currently configured ``StatsdClient``.
+    Returns the thread-local client if there is one, or the global client
+    if there is one, or None.
 
-``set_statsd_client(client_or_uri)``: Set the global StatsdClient.  The
-``client_or_uri`` can be a StatsdClient, a ``statsd://`` URI, or None.
+set_statsd_client(client_or_uri)
+    Set the global StatsdClient.  The
+    ``client_or_uri`` can be a StatsdClient, a ``statsd://`` URI, or None.
 
-``statsd_client_from_uri(uri)``: Create a ``StatsdClient`` from a URI.
-A typical URI is ``statsd://localhost:8125``.  An optional
-query parameter is ``gauge_suffix``.  The default gauge_suffix
-is ``.<host_name>``.  See the ``StatsdClient`` documentation for
-more information about ``gauge_suffix``.
+statsd_client_from_uri(uri)
+    Create a ``StatsdClient`` from a URI.
+    A typical URI is ``statsd://localhost:8125``.  An optional
+    query parameter is ``gauge_suffix``.  The default gauge_suffix
+    is ``.<host_name>``.  See the ``StatsdClient`` documentation for
+    more information about ``gauge_suffix``.
 
 
 StatsdClient Methods
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
-Application code can send custom metrics by first getting the current
+Python code can send custom metrics by first getting the current
 ``StatsdClient`` using the ``statsd_client()`` method.  Note that
-``statsd_client()`` may return None.
+``statsd_client()`` returns None if no client has been configured.
 
 Most of the methods below have optional ``sample_rate`` and ``buf``
 parameters.  The ``sample_rate`` parameter, when set to a value less than
@@ -143,28 +183,34 @@ the size of UDP packets is limited (the limit varies by the network, but
 1000 bytes is usually a good guess) and any extra bytes will be ignored
 silently.
 
-``timing(stat, time, sample_rate=1, buf=None)``: Log timing information.
-``stat`` is the name of the metric to record and ``time`` is how long
-the measured item took in milliseconds.  Note that
-Statsd maintains several data points for each timing metric, so timing
-metrics can be more expensive than counters or gauges.
+timing(stat, time, sample_rate=1, buf=None)
+    Record timing information.
+    ``stat`` is the name of the metric to record and ``time`` is the
+    timing measurement in milliseconds.  Note that
+    Statsd maintains several data points for each timing metric, so timing
+    metrics can take more disk space than counters or gauges.
 
-``gauge(stat, value, suffix=None, sample_rate=1, buf=None)``:
-Update a gauge value.
-``stat`` is the name of the metric to record and ``value`` is the new
-gauge value.  Because gauges from different machines often conflict, a
-suffix is applied to all gauge names.  The default gauge_suffix is based
-on the host name.  If the ``suffix`` parameter is not None, it overrides
-the default suffix.
+gauge(stat, value, suffix=None, sample_rate=1, buf=None)
+    Update a gauge value.
+    ``stat`` is the name of the metric to record and ``value`` is the new
+    gauge value.  A gauge represents a persistent value such as a pool size.
+    Because gauges from different machines often conflict, a
+    suffix is applied to all gauge names.  The default gauge suffix is based
+    on the host name.  If the ``suffix`` parameter is a string (including an
+    empty string), it overrides the default gauge suffix.
 
-``inc(stat, sample_rate=1, buf=None``: Increment a counter.
+inc(stat, sample_rate=1, buf=None``
+    Increment a counter.
 
-``dec(stat, sample_rate=1, buf=None``: Decrement a counter.
+dec(stat, sample_rate=1, buf=None``
+    Decrement a counter.
 
-``change(stat, delta, sample_rate=1, buf=None)``: Change a counter by an
-arbitrary amount.  Note that Statsd clears all counter values every time
-it sends the metrics to Graphite, which usually happens every 10 seconds.
-If you need a persistent value, it may be more appropriate to use a ``gauge``
-instead.
+change(stat, delta, sample_rate=1, buf=None)
+    Change a counter by an
+    arbitrary amount.  Note that Statsd clears all counter values every time
+    it sends the metrics to Graphite, which usually happens every 10 seconds.
+    If you need a persistent value, it may be more appropriate to use a ``gauge``
+    instead.
 
-``sendbuf(buf)``: Send the contents of the ``buf`` list to Statsd.
+sendbuf(buf)
+    Send the contents of the ``buf`` list to Statsd.
