@@ -36,7 +36,7 @@ class TestStatsdClient(unittest.TestCase):
     def test_timing_with_sample_rate_1(self):
         obj = self._make()
         obj.timing('some.thing', 750)
-        self.assertEqual(self.sent, [('some.thing:750|ms', obj.addr)])
+        self.assertEqual(self.sent, [(b'some.thing:750|ms', obj.addr)])
 
     def test_timing_with_sample_rate_too_low(self):
         obj = self._make()
@@ -53,7 +53,7 @@ class TestStatsdClient(unittest.TestCase):
     def test_gauge_with_sample_rate_1(self):
         obj = self._make()
         obj.gauge('some.thing', 50)
-        self.assertEqual(self.sent, [('some.thing.testsuffix:50|g', obj.addr)])
+        self.assertEqual(self.sent, [(b'some.thing.testsuffix:50|g', obj.addr)])
 
     def test_gauge_with_sample_rate_too_low(self):
         obj = self._make()
@@ -70,7 +70,7 @@ class TestStatsdClient(unittest.TestCase):
     def test_inc_with_one_metric(self):
         obj = self._make()
         obj.inc('some.thing')
-        self.assertEqual(self.sent, [('some.thing:1|c', obj.addr)])
+        self.assertEqual(self.sent, [(b'some.thing:1|c', obj.addr)])
 
     def test_inc_with_two_metrics(self):
         obj = self._make()
@@ -79,22 +79,22 @@ class TestStatsdClient(unittest.TestCase):
         obj.inc('other.thing', buf=buf)
         obj.sendbuf(buf)
         self.assertEqual(self.sent,
-                         [('some.thing:1|c\nother.thing:1|c', obj.addr)])
+                         [(b'some.thing:1|c\nother.thing:1|c', obj.addr)])
 
     def test_inc_with_sample_rate_too_low(self):
         obj = self._make()
         obj.inc('some.thing', sample_rate=-1)
-        self.assertEqual(sorted(self.sent), [])
+        self.assertEqual(self.sent, [])
 
     def test_dec(self):
         obj = self._make()
         obj.dec('some.thing')
-        self.assertEqual(self.sent, [('some.thing:-1|c', obj.addr)])
+        self.assertEqual(self.sent, [(b'some.thing:-1|c', obj.addr)])
 
     def test_change_with_one_metric(self):
         obj = self._make()
         obj.change('some.thing', 51)
-        self.assertEqual(self.sent, [('some.thing:51|c', obj.addr)])
+        self.assertEqual(self.sent, [(b'some.thing:51|c', obj.addr)])
 
     def test_change_with_two_metrics(self):
         obj = self._make()
@@ -103,13 +103,13 @@ class TestStatsdClient(unittest.TestCase):
         obj.change('other.thing', -41, buf=buf)
         obj.sendbuf(buf)
         self.assertEqual(self.sent,
-                         [('some.thing:42|c\nother.thing:-41|c', obj.addr)])
+                         [(b'some.thing:42|c\nother.thing:-41|c', obj.addr)])
 
     def test_change_with_sample_rate_hit(self):
         obj = self._make()
         obj.random = lambda: 0.01
         obj.change('some.thing', 51, sample_rate=0.1)
-        self.assertEqual(self.sent, [('some.thing:51|c|@0.1', obj.addr)])
+        self.assertEqual(self.sent, [(b'some.thing:51|c|@0.1', obj.addr)])
 
     def test_change_with_sample_rate_miss(self):
         obj = self._make()

@@ -150,7 +150,6 @@ class TestMetric(unittest.TestCase):
 
         self.assertEqual(Spam.f.__module__, __name__)
         self.assertEqual(Spam.f.__name__, 'f')
-        self.assertEqual(Spam.f.im_class, Spam)
 
         # Call with no statsd client configured.
         Spam().f(4, 5)

@@ -81,7 +81,7 @@ class StatsdClient(object):
     def send(self, data):
         """Send a UDP packet containing a string."""
         try:
-            self.udp_sock.sendto(data, self.addr)
+            self.udp_sock.sendto(data.encode('utf-8'), self.addr)
         except IOError:
             self.log.exception("Failed to send UDP packet")
 
@@ -89,6 +89,6 @@ class StatsdClient(object):
         """Send a UDP packet containing string lines."""
         try:
             if buf:
-                self.udp_sock.sendto('\n'.join(buf), self.addr)
+                self.udp_sock.sendto('\n'.join(buf).encode('utf-8'), self.addr)
         except IOError:
             self.log.exception("Failed to send UDP packet")

@@ -9,7 +9,20 @@ from time import time
 import functools
 import socket
 import threading
-import urlparse
+
+try:  # pragma no cover
+    # Python 3
+    from urllib.parse import urlsplit
+    from urllib.parse import parse_qsl
+    from urllib.parse import uses_query
+
+    basestring = str
+
+except ImportError:  # pragma no cover
+    # Python 2
+    from urlparse import urlsplit
+    from urlparse import parse_qsl
+    from urlparse import uses_query
 
 
 __all__ = ['metric',
@@ -26,7 +39,7 @@ statsd_client_stack = client_stack
 
 def statsd_client():
     """Return the current StatsdClient for the thread.
-    
+
     Defaults to the global client set by ``set_statsd_client``.
     """
     return statsd_client_stack.get()
@@ -34,7 +47,7 @@ def statsd_client():
 
 def set_statsd_client(client_or_uri):
     """Set the global StatsdClient.
-    
+
     Accepts either a StatsdClient, a Statsd URI, or None (to clear the
     global client).
     """
@@ -45,8 +58,8 @@ def set_statsd_client(client_or_uri):
     ClientStack.default = client
 
 
-if 'statsd' not in urlparse.uses_query:
-    urlparse.uses_query.append('statsd')
+if 'statsd' not in uses_query:
+    uses_query.append('statsd')
 
 
 def statsd_client_from_uri(uri):
@@ -56,12 +69,12 @@ def statsd_client_from_uri(uri):
     query parameter is ``gauge_suffix``.  The default gauge_suffix
     is ".<current_host_name>".
     """
-    parts = urlparse.urlsplit(uri)
+    parts = urlsplit(uri)
     if parts.scheme == 'statsd':
         gauge_suffix = '.%s' % socket.gethostname()
         kw = {'gauge_suffix': gauge_suffix}
         if parts.query:
-            kw.update(urlparse.parse_qsl(parts.query))
+            kw.update(parse_qsl(parts.query))
         return StatsdClient(parts.hostname, parts.port, **kw)
     else:
         raise ValueError("URI scheme not supported: %s" % uri)

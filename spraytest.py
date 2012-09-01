@@ -14,6 +14,12 @@ class MyClass(object):
         """Do some other possibly expensive thing"""
 
 
+try:
+    xrange
+except NameError:
+    xrange = range  # Python 3
+
+
 set_statsd_client('statsd://localhost:8125')
 for i in xrange(1000000):
     myfunction()
