@@ -14,7 +14,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 setup(
     name='perfmetrics',
-    version='0.9',
+    version='0.9.1',
     author='Shane Hathaway',
     author_email='shane@hathawaymix.org',
     description='Send performance metrics about Python code to Statsd',
@@ -29,6 +29,7 @@ setup(
         "Topic :: System :: Monitoring",
         ],
     url="https://github.com/hathawsh/perfmetrics",
+    license='BSD-derived (http://www.repoze.org/LICENSE.txt)',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
