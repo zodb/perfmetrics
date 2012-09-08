@@ -26,24 +26,25 @@ class StatsdClient(object):
             gauge_suffix = '.' + gauge_suffix
         self.gauge_suffix = gauge_suffix
 
-    def timing(self, stat, value, rate=1, buf=None):
+    def timing(self, stat, value, rate=1, buf=None, rate_applied=False):
         """Log timing information in milliseconds.
 
         >>> client.timing('some.time', 500)
         """
-        if rate >= 1 or self.random() < rate:
+        if rate >= 1 or rate_applied or self.random() < rate:
             s = '%s%s:%d|ms' % (self.prefix, stat, value)
             if buf is None:
                 self._send(s)
             else:
                 buf.append(s)
 
-    def gauge(self, stat, value, suffix=None, rate=1, buf=None):
+    def gauge(self, stat, value, suffix=None, rate=1, buf=None,
+              rate_applied=False):
         """Log a gauge value.
 
         >>> client.gauge('pool_size', 5)
         """
-        if rate >= 1 or self.random() < rate:
+        if rate >= 1 or rate_applied or self.random() < rate:
             if suffix is None:
                 suffix = self.gauge_suffix or ''
             s = '%s%s%s:%s|g' % (self.prefix, stat, suffix, value)
@@ -52,7 +53,7 @@ class StatsdClient(object):
             else:
                 buf.append(s)
 
-    def incr(self, stat, count=1, rate=1, buf=None):
+    def incr(self, stat, count=1, rate=1, buf=None, rate_applied=False):
         """Increment a counter.
 
         >>> client.incr('some.int')
@@ -60,7 +61,7 @@ class StatsdClient(object):
         """
         if rate >= 1:
             s = '%s%s:%s|c' % (self.prefix, stat, count)
-        elif self.random() < rate:
+        elif rate_applied or self.random() < rate:
             s = '%s%s:%s|c|@%s' % (self.prefix, stat, count, rate)
         else:
             return
@@ -70,12 +71,12 @@ class StatsdClient(object):
         else:
             buf.append(s)
 
-    def decr(self, stat, count=1, rate=1, buf=None):
+    def decr(self, stat, count=1, rate=1, buf=None, rate_applied=False):
         """Decrement a counter.
 
         >>> client.decr('some.int')
         """
-        self.incr(stat, -count, rate=rate, buf=buf)
+        self.incr(stat, -count, rate=rate, buf=buf, rate_applied=rate_applied)
 
     def _send(self, data):
         """Send a UDP packet containing a string."""

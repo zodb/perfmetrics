@@ -74,13 +74,15 @@ class TestMetric(unittest.TestCase):
         self.sentbufs = sentbufs = []
 
         class DummyStatsdClient:
-            def incr(self, stat, count=1, rate=1, buf=None):
-                changes.append((stat, count, rate, buf))
+            def incr(self, stat, count=1, rate=1, buf=None,
+                     rate_applied=False):
+                changes.append((stat, count, rate, buf, rate_applied))
                 if buf is not None:
                     buf.append('count_line')
 
-            def timing(self, stat, ms, rate, buf=None):
-                timing.append((stat, ms, rate, buf))
+            def timing(self, stat, ms, rate, buf=None,
+                       rate_applied=False):
+                timing.append((stat, ms, rate, buf, rate_applied))
                 if buf is not None:
                     buf.append('timing_line')
 
@@ -124,18 +126,20 @@ class TestMetric(unittest.TestCase):
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        stat, delta, rate, buf = self.changes[0]
+        stat, delta, rate, buf, rate_applied = self.changes[0]
         self.assertEqual(stat, __name__ + '.spam')
         self.assertEqual(delta, 1)
         self.assertEqual(rate, 1)
         self.assertEqual(buf, ['count_line', 'timing_line'])
+        self.assertTrue(rate_applied)
 
         self.assertEqual(len(self.timing), 1)
-        stat, ms, rate, _buf = self.timing[0]
+        stat, ms, rate, _buf, rate_applied = self.timing[0]
         self.assertEqual(stat, __name__ + '.spam')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
+        self.assertTrue(rate_applied)
 
         self.assertEqual(self.sentbufs, [['count_line', 'timing_line']])
 
@@ -162,18 +166,20 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(args, [(6, 1)])
 
         self.assertEqual(len(self.changes), 1)
-        stat, delta, rate, buf = self.changes[0]
+        stat, delta, rate, buf, rate_applied = self.changes[0]
         self.assertEqual(stat, __name__ + '.Spam.f')
         self.assertEqual(delta, 1)
         self.assertEqual(rate, 1)
         self.assertEqual(buf, ['count_line', 'timing_line'])
+        self.assertTrue(rate_applied)
 
         self.assertEqual(len(self.timing), 1)
-        stat, ms, rate, _buf = self.timing[0]
+        stat, ms, rate, _buf, rate_applied = self.timing[0]
         self.assertEqual(stat, __name__ + '.Spam.f')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
+        self.assertTrue(rate_applied)
 
         self.assertEqual(self.sentbufs, [['count_line', 'timing_line']])
 
@@ -181,7 +187,7 @@ class TestMetric(unittest.TestCase):
         args = []
         Metric = self._class
 
-        @Metric('spammy', rate=0.1, timing=False)
+        @Metric('spammy', rate=0.01, timing=False, random=lambda: 0.001)
         def spam(x, y=2):
             args.append((x, y))
 
@@ -199,11 +205,12 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(args, [(6, 1)])
 
         self.assertEqual(len(self.changes), 1)
-        stat, delta, rate, buf = self.changes[0]
+        stat, delta, rate, buf, rate_applied = self.changes[0]
         self.assertEqual(stat, 'spammy')
         self.assertEqual(delta, 1)
-        self.assertEqual(rate, 0.1)
+        self.assertEqual(rate, 0.01)
         self.assertIsNone(buf)
+        self.assertTrue(rate_applied)
 
         self.assertEqual(len(self.timing), 0)
         self.assertEqual(self.sentbufs, [])
@@ -231,14 +238,35 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(self.changes, [])
         self.assertEqual(len(self.timing), 1)
 
-        stat, ms, rate, buf = self.timing[0]
+        stat, ms, rate, buf, rate_applied = self.timing[0]
         self.assertEqual(stat, __name__ + '.spam')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
         self.assertIsNone(buf)
+        self.assertTrue(rate_applied)
 
         self.assertEqual(self.sentbufs, [])
+
+    def test_ignore_function_sample(self):
+        args = []
+        Metric = self._class
+
+        @Metric(rate=0.99, random=lambda: 0.999)
+        def spam(x, y=2):
+            args.append((x, y))
+            return 77
+
+        self._add_client()
+        self.assertEqual(77, spam(6, 1))
+
+        # The function was called
+        self.assertEqual(args, [(6, 1)])
+
+        # No packets were sent because the random value was too high.
+        self.assertFalse(self.changes)
+        self.assertFalse(self.timing)
+        self.assertFalse(self.sentbufs)
 
     def test_as_context_manager_with_stat_name(self):
         args = []
@@ -258,21 +286,42 @@ class TestMetric(unittest.TestCase):
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        stat, delta, rate, buf = self.changes[0]
+        stat, delta, rate, buf, rate_applied = self.changes[0]
         self.assertEqual(stat, 'thing-done')
         self.assertEqual(delta, 1)
         self.assertEqual(rate, 1)
         self.assertEqual(buf, ['count_line', 'timing_line'])
+        self.assertTrue(rate_applied)
 
         self.assertEqual(len(self.timing), 1)
-        stat, ms, rate, _buf = self.timing[0]
+        stat, ms, rate, _buf, rate_applied = self.timing[0]
         self.assertEqual(stat, 'thing-done')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
+        self.assertTrue(rate_applied)
 
         self.assertEqual(self.sentbufs, [['count_line', 'timing_line']])
 
+    def test_ignore_context_manager_sample(self):
+        args = []
+        Metric = self._class
+
+        def spam(x, y=2):
+            with Metric('thing-done', rate=0.99, random=lambda: 0.999):
+                args.append((x, y))
+                return 88
+
+        self._add_client()
+        self.assertEqual(88, spam(6, 716))
+
+        # The function was called
+        self.assertEqual(args, [(6, 716)])
+
+        # No packets were sent because the random value was too high.
+        self.assertFalse(self.changes)
+        self.assertFalse(self.timing)
+        self.assertFalse(self.sentbufs)
 
     def test_as_context_manager_without_stat_name(self):
         args = []

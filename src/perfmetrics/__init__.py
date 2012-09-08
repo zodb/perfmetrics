@@ -8,6 +8,7 @@ from perfmetrics.statsd import StatsdClient
 from time import time
 import functools
 import os
+import random
 import socket
 import threading
 
@@ -86,12 +87,13 @@ class Metric(object):
     """A factory of metric decorator/context managers."""
 
     def __init__(self, stat=None, rate=1, method=False,
-                 count=True, timing=True):
+                 count=True, timing=True, random=random.random):
         self.stat = stat
         self.rate = rate
         self.method = method
         self.count = count
         self.timing = timing
+        self.random = random
 
     def __call__(self, f):
         """Decorate a function or method so it can send statistics to statsd.
@@ -104,8 +106,13 @@ class Metric(object):
         method = self.method
         count = self.count
         timing = self.timing
+        random = self.random
 
         def call_with_metric(*args, **kw):
+            if rate < 1 and random() >= rate:
+                # Ignore this sample.
+                return f(*args, **kw)
+
             stack = statsd_client_stack.stack
             client = stack[-1] if stack else client_stack.default
             if client is None:
@@ -123,7 +130,7 @@ class Metric(object):
             if timing:
                 if count:
                     buf = []
-                    client.incr(stat, 1, rate, buf=buf)
+                    client.incr(stat, 1, rate, buf=buf, rate_applied=True)
                 else:
                     buf = None
                 start = time()
@@ -131,13 +138,14 @@ class Metric(object):
                     return f(*args, **kw)
                 finally:
                     elapsed_ms = int((time() - start) * 1000.0)
-                    client.timing(stat, elapsed_ms, rate, buf=buf)
+                    client.timing(stat, elapsed_ms, rate, buf=buf,
+                                  rate_applied=True)
                     if buf:
                         client.sendbuf(buf)
 
             else:
                 if count:
-                    client.incr(stat, 1, rate)
+                    client.incr(stat, 1, rate, rate_applied=True)
                 return f(*args, **kw)
 
         return functools.update_wrapper(call_with_metric, f)
@@ -148,18 +156,23 @@ class Metric(object):
         self.start = time()
 
     def __exit__(self, _typ, _value, _tb):
+        rate = self.rate
+        if rate < 1 and self.random() >= rate:
+            # Ignore this sample.
+            return
+
         stack = statsd_client_stack.stack
         client = stack[-1] if stack else client_stack.default
         if client is not None:
             buf = []
             stat = self.stat
             if stat:
-                rate = self.rate
                 if self.count:
-                    client.incr(stat, rate=rate, buf=buf)
+                    client.incr(stat, rate=rate, buf=buf, rate_applied=True)
                 if self.timing:
                     elapsed = int((time() - self.start) * 1000.0)
-                    client.timing(stat, elapsed, rate=rate, buf=buf)
+                    client.timing(stat, elapsed, rate=rate, buf=buf,
+                                  rate_applied=True)
                 if buf:
                     client.sendbuf(buf)
 
@@ -171,6 +184,6 @@ metric = Metric()
 metricmethod = Metric(method=True)
 
 
-_url = os.environ.get('STATSD_URL')
-if _url:
-    set_statsd_client(_url)  # pragma no cover
+_uri = os.environ.get('STATSD_URI')
+if _uri:
+    set_statsd_client(_uri)  # pragma no cover

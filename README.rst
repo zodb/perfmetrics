@@ -13,6 +13,11 @@ no I/O delays to applications and little CPU overhead.  It can work
 equally well in threaded (synchronous) or event-driven (asynchronous)
 software.
 
+|TravisBadge|_
+
+.. |TravisBadge| image:: https://secure.travis-ci.org/hathawsh/perfmetrics.png?branch=master
+.. _TravisBadge: http://travis-ci.org/hathawsh/perfmetrics
+
 
 Usage
 =====
@@ -190,24 +195,28 @@ Python code can send custom metrics by first getting the current
 ``StatsdClient`` using the ``statsd_client()`` function.  Note that
 ``statsd_client()`` returns None if no client has been configured.
 
-Most of the methods below have optional ``rate`` and ``buf``
-parameters.  The ``rate`` parameter, when set to a value less than
-1, causes StatsdClient to send a random sample of packets rather than every
-packet.  If the ``buf`` parameter is a list, StatsdClient appends the packet
-contents to the ``buf`` list rather than send the packet, making it
-possible to send multiple updates in a single packet.  Keep in mind that
-the size of UDP packets is limited (the limit varies by the network, but
-1000 bytes is usually a good guess) and any extra bytes will be ignored
-silently.
+Most of the methods below have optional ``rate``, ``rate_applied``,
+and ``buf`` parameters.  The ``rate`` parameter, when set to a value
+less than 1, causes StatsdClient to send a random sample of packets rather
+than every packet.  The ``rate_applied`` parameter, if true, informs
+``StatsdClient`` that the sample rate has already been applied and the
+packet should be sent regardless of the specified sample rate.
 
-timing(stat, value, rate=1, buf=None)
+If the ``buf`` parameter is a list, StatsdClient
+appends the packet contents to the ``buf`` list rather than send the
+packet, making it possible to send multiple updates in a single packet.
+Keep in mind that the size of UDP packets is limited (the limit varies
+by the network, but 1000 bytes is usually a good guess) and any extra
+bytes will be ignored silently.
+
+timing(stat, value, rate=1, buf=None, rate_applied=False)
     Record timing information.
     ``stat`` is the name of the metric to record and ``value`` is the
     timing measurement in milliseconds.  Note that
     Statsd maintains several data points for each timing metric, so timing
     metrics can take more disk space than counters or gauges.
 
-gauge(stat, value, suffix=None, rate=1, buf=None)
+gauge(stat, value, suffix=None, rate=1, buf=None, rate_applied=False)
     Update a gauge value.
     ``stat`` is the name of the metric to record and ``value`` is the new
     gauge value.  A gauge represents a persistent value such as a pool size.
@@ -216,13 +225,13 @@ gauge(stat, value, suffix=None, rate=1, buf=None)
     parameter is a string (including an empty string), it overrides the
     default gauge suffix.
 
-incr(stat, count=1, rate=1, buf=None)
+incr(stat, count=1, rate=1, buf=None, rate_applied=False)
     Increment a counter by ``count``.  Note that Statsd clears all counter
     values every time it sends the metrics to Graphite, which usually
     happens every 10 seconds.  If you need a persistent value, it may
     be more appropriate to use a gauge instead of a counter.
 
-decr(stat, count=1, rate=1, buf=None)
+decr(stat, count=1, rate=1, buf=None, rate_applied=False)
     Decrement a counter by ``count``.
 
 sendbuf(buf)
