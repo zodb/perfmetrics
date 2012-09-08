@@ -37,9 +37,10 @@ Sample::
     	    """Do some other possibly expensive thing"""
 
 Next, tell perfmetrics how to connect to Statsd.  (Until you do, the
-decorators have no effect.)  Ideally, your application should read the
-Statsd URI from a configuration file at startup time, but the example
-below uses a hard-coded URI for simplicity::
+decorators have no effect.)  Ideally, either your application should read the
+Statsd URI from a configuration file at startup time, or you should set
+the STATSD_URI environment variable.  The example below uses a
+hard-coded URI::
 
     from perfmetrics import set_statsd_client
     set_statsd_client('statsd://localhost:8125')
@@ -166,11 +167,15 @@ statsd_client()
     if there is one, or None.
 
 set_statsd_client(client_or_uri)
-    Set the global StatsdClient.  The
+    Set the global ``StatsdClient``.  The
     ``client_or_uri`` can be a StatsdClient, a ``statsd://`` URI, or None.
+    Note that when the perfmetrics module is imported, it looks for the
+    ``STATSD_URI`` environment variable and calls set_statsd_client()
+    if that variable is found.
 
 statsd_client_from_uri(uri)
-    Create a ``StatsdClient`` from a URI.
+    Create a ``StatsdClient`` from a URI, but do not install it as the
+    global StatsdClient.
     A typical URI is ``statsd://localhost:8125``.  Supported optional
     query parameters are ``prefix`` and ``gauge_suffix``.  The default
     prefix is empty and the default gauge_suffix
@@ -182,7 +187,7 @@ StatsdClient Methods
 --------------------
 
 Python code can send custom metrics by first getting the current
-``StatsdClient`` using the ``statsd_client()`` method.  Note that
+``StatsdClient`` using the ``statsd_client()`` function.  Note that
 ``statsd_client()`` returns None if no client has been configured.
 
 Most of the methods below have optional ``rate`` and ``buf``

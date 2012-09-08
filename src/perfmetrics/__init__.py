@@ -7,6 +7,7 @@ from perfmetrics.clientstack import client_stack
 from perfmetrics.statsd import StatsdClient
 from time import time
 import functools
+import os
 import socket
 import threading
 
@@ -168,3 +169,8 @@ metric = Metric()
 
 # 'metricmethod' is a method decorator with default options.
 metricmethod = Metric(method=True)
+
+
+_url = os.environ.get('STATSD_URL')
+if _url:
+    set_statsd_client(_url)  # pragma no cover
