@@ -248,6 +248,28 @@ class TestMetric(unittest.TestCase):
 
         self.assertEqual(self.sentbufs, [])
 
+    def test_decorate_with_neither_timing_nor_count(self):
+        args = []
+        Metric = self._class
+
+        @Metric(count=False, timing=False)
+        def spam(x, y=2):
+            args.append((x, y))
+
+        # Call with no statsd client configured.
+        spam(4, 5)
+        self.assertEqual(args, [(4, 5)])
+        del args[:]
+
+        # Call with a statsd client configured.
+        self._add_client()
+        spam(6, 1)
+        self.assertEqual(args, [(6, 1)])
+        self.assertEqual(self.changes, [])
+        self.assertEqual(len(self.timing), 0)
+
+        self.assertEqual(self.sentbufs, [])
+
     def test_ignore_function_sample(self):
         args = []
         Metric = self._class
@@ -338,3 +360,177 @@ class TestMetric(unittest.TestCase):
         self.assertFalse(self.changes)
         self.assertFalse(self.timing)
         self.assertFalse(self.sentbufs)
+
+    def test_as_context_manager_without_timing(self):
+        args = []
+        Metric = self._class
+
+        def spam(x, y=2):
+            with Metric('thing-done', timing=False):
+                args.append((x, y))
+
+        self._add_client()
+        spam(6, 1)
+        self.assertEqual(args, [(6, 1)])
+
+        self.assertEqual(len(self.changes), 1)
+
+        stat, delta, rate, buf, rate_applied = self.changes[0]
+        self.assertEqual(stat, 'thing-done')
+        self.assertEqual(delta, 1)
+        self.assertEqual(rate, 1)
+        self.assertEqual(buf, ['count_line'])
+        self.assertTrue(rate_applied)
+
+        self.assertEqual(len(self.timing), 0)
+
+        self.assertEqual(self.sentbufs, [['count_line']])
+
+    def test_as_context_manager_without_count(self):
+        args = []
+        Metric = self._class
+
+        def spam(x, y=2):
+            with Metric('thing-done', count=False):
+                args.append((x, y))
+
+        # Call with a statsd client configured.
+        self._add_client()
+        spam(6, 1)
+        self.assertEqual(args, [(6, 1)])
+
+        self.assertEqual(len(self.changes), 0)
+        self.assertEqual(len(self.timing), 1)
+        stat, ms, rate, _buf, rate_applied = self.timing[0]
+        self.assertEqual(stat, 'thing-done')
+        self.assertGreaterEqual(ms, 0)
+        self.assertLess(ms, 10000)
+        self.assertEqual(rate, 1)
+        self.assertTrue(rate_applied)
+
+        self.assertEqual(self.sentbufs, [['timing_line']])
+
+    def test_as_context_manager_with_neither_count_nor_timing(self):
+        args = []
+        Metric = self._class
+
+        def spam(x, y=2):
+            with Metric('thing-done', count=False, timing=False):
+                args.append((x, y))
+
+        # Call with a statsd client configured.
+        self._add_client()
+        spam(6, 1)
+        self.assertEqual(args, [(6, 1)])
+
+        self.assertEqual(len(self.changes), 0)
+        self.assertEqual(len(self.timing), 0)
+        self.assertEqual(self.sentbufs, [])
+
+
+class Test_includeme(unittest.TestCase):
+
+    def _call(self, config):
+        from perfmetrics import includeme
+        includeme(config)
+
+    def _make_config(self, statsd_uri):
+        self.tweens = tweens = []
+
+        class DummyRegistry:
+            settings = {}
+            if statsd_uri:
+                settings['statsd_uri'] = statsd_uri
+
+        class DummyConfig:
+            registry = DummyRegistry()
+
+            def add_tween(self, name):
+                tweens.append(name)
+
+        return DummyConfig()
+
+    def test_without_statsd_uri(self):
+        config = self._make_config(None)
+        self._call(config)
+        self.assertFalse(self.tweens)
+
+    def test_with_statsd_uri(self):
+        config = self._make_config('statsd://localhost:9999')
+        self._call(config)
+        self.assertEqual(self.tweens, ['perfmetrics.tween'])
+
+
+class Test_tween(unittest.TestCase):
+
+    def setUp(self):
+        from perfmetrics import set_statsd_client, statsd_client_stack
+        set_statsd_client(None)
+        statsd_client_stack.clear()
+
+    def _call(self, handler, registry):
+        from perfmetrics import tween
+        return tween(handler, registry)
+
+    def _make_registry(self, statsd_uri):
+        class DummyRegistry:
+            settings = {'statsd_uri': statsd_uri}
+
+        return DummyRegistry()
+
+    def test_call_tween(self):
+        clients = []
+
+        def dummy_handler(request):
+            from perfmetrics import statsd_client
+            clients.append(statsd_client())
+            return 'ok!'
+
+        registry = self._make_registry('statsd://localhost:9999')
+        tween = self._call(dummy_handler, registry)
+        response = tween(object())
+        self.assertEqual(response, 'ok!')
+        self.assertEqual(len(clients), 1)
+        from perfmetrics.statsd import StatsdClient
+        self.assertIsInstance(clients[0], StatsdClient)
+
+
+class Test_make_statsd_app(unittest.TestCase):
+
+    def setUp(self):
+        from perfmetrics import set_statsd_client, statsd_client_stack
+        set_statsd_client(None)
+        statsd_client_stack.clear()
+
+    def _call(self, nextapp, statsd_uri):
+        from perfmetrics import make_statsd_app
+        return make_statsd_app(nextapp, None, statsd_uri)
+
+    def test_without_statsd_uri(self):
+        clients = []
+
+        def dummy_app(environ, start_response):
+            from perfmetrics import statsd_client
+            clients.append(statsd_client())
+            return ['ok.']
+
+        app = self._call(dummy_app, '')
+        response = app({}, None)
+        self.assertEqual(response, ['ok.'])
+        self.assertEqual(len(clients), 1)
+        self.assertIsNone(clients[0])
+
+    def test_with_statsd_uri(self):
+        clients = []
+
+        def dummy_app(environ, start_response):
+            from perfmetrics import statsd_client
+            clients.append(statsd_client())
+            return ['ok.']
+
+        app = self._call(dummy_app, 'statsd://localhost:9999')
+        response = app({}, None)
+        self.assertEqual(response, ['ok.'])
+        self.assertEqual(len(clients), 1)
+        from perfmetrics.statsd import StatsdClient
+        self.assertIsInstance(clients[0], StatsdClient)

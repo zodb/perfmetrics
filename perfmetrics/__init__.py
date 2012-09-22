@@ -60,7 +60,7 @@ def set_statsd_client(client_or_uri):
     ClientStack.default = client
 
 
-if 'statsd' not in uses_query:
+if 'statsd' not in uses_query:  # pragma: no cover
     uses_query.append('statsd')
 
 
@@ -187,3 +187,56 @@ metricmethod = Metric(method=True)
 _uri = os.environ.get('STATSD_URI')
 if _uri:
     set_statsd_client(_uri)  # pragma no cover
+
+
+#==============================================================================
+# Optional Pyramid integration
+#==============================================================================
+
+
+def includeme(config):
+    """Pyramid configuration hook: activate the perfmetrics tween.
+
+    A statsd_uri should be in the settings.
+    """
+    if config.registry.settings.get('statsd_uri'):
+        config.add_tween('perfmetrics.tween')
+
+
+def tween(handler, registry):
+    """Pyramid tween that sets up a Statsd client for each request.
+    """
+    uri = registry.settings['statsd_uri']
+    client = statsd_client_from_uri(uri)
+
+    def handle(request):
+        statsd_client_stack.push(client)
+        try:
+            return handler(request)
+        finally:
+            statsd_client_stack.pop()
+
+    return handle
+
+
+#==============================================================================
+# Optional WSGI integration
+#==============================================================================
+
+
+def make_statsd_app(nextapp, _globals=None, statsd_uri=''):
+    """Create a WSGI filter app that sets up Statsd for each request."""
+    if not statsd_uri:
+        # Disabled.
+        return nextapp
+
+    client = statsd_client_from_uri(statsd_uri)
+
+    def app(environ, start_response):
+        statsd_client_stack.push(client)
+        try:
+            return nextapp(environ, start_response)
+        finally:
+            statsd_client_stack.pop()
+
+    return app

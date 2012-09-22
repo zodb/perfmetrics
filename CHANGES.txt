@@ -2,6 +2,12 @@
 CHANGES
 =======
 
+0.9.5 (2012-09-22)
+------------------
+
+- Added an optional Pyramid tween and a similar WSGI filter app
+  that sets up the Statsd client for each request.
+
 0.9.4 (2012-09-08)
 ------------------
 

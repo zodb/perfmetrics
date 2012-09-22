@@ -69,6 +69,11 @@ class TestStatsdClient(unittest.TestCase):
         obj.gauge('some.thing', 50)
         self.assertEqual(self.sent, [(b'some.thing.testhost:50|g', obj.addr)])
 
+    def test_gauge_with_suffix_override(self):
+        obj = self._make()
+        obj.gauge('some.thing', 50, suffix='.w00t')
+        self.assertEqual(self.sent, [(b'some.thing.w00t:50|g', obj.addr)])
+
     def test_gauge_with_rate_too_low(self):
         obj = self._make()
         obj.gauge('some.thing', 50, rate=-1)
@@ -139,4 +144,9 @@ class TestStatsdClient(unittest.TestCase):
     def test_sendbuf_with_ioerror(self):
         obj = self._make(error=IOError('synthetic'))
         obj.sendbuf(['some.thing:41|g'])
+        self.assertEqual(self.sent, [])
+
+    def test_sendbuf_with_empty_buf(self):
+        obj = self._make()
+        obj.sendbuf([])
         self.assertEqual(self.sent, [])

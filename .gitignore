@@ -6,6 +6,7 @@
 .pydevproject
 bin
 build
+coverage
 develop-eggs
 dist
 eggs

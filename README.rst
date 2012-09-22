@@ -67,6 +67,34 @@ installs Graphite and Statsd in a custom location without root access.
 .. _`graphite_buildout example`: https://github.com/hathawsh/graphite_buildout
 
 
+Pyramid and WSGI
+================
+
+If you have a Pyramid app, you can set the ``statsd_uri`` for each
+request by including perfmetrics in your configuration::
+
+    config = Configuration(...)
+    config.include('perfmetrics')
+
+Also add a ``statsd_uri`` setting such as ``statsd://localhost:8125``.
+Once configured, the perfmetrics tween will set up a Statsd client for
+the duration of each request.  This is especially useful if you run
+multiple apps in one Python interpreter and you want a different
+``statsd_uri`` for each app.
+
+Similar functionality exists for WSGI apps.  Add the app to your Paste Deploy
+pipeline::
+
+    [statsd]
+    use = egg:perfmetrics#statsd
+    statsd_uri = statsd://localhost:8125
+
+    [pipeline:main]
+    pipeline =
+        statsd
+        egg:myapp#myentrypoint
+
+
 Threading
 =========
 
