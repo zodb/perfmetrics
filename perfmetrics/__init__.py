@@ -212,7 +212,8 @@ def tween(handler, registry):
     def handle(request):
         statsd_client_stack.push(client)
         try:
-            return handler(request)
+            with Metric('perfmetrics.tween'):
+                return handler(request)
         finally:
             statsd_client_stack.pop()
 
@@ -235,7 +236,8 @@ def make_statsd_app(nextapp, _globals=None, statsd_uri=''):
     def app(environ, start_response):
         statsd_client_stack.push(client)
         try:
-            return nextapp(environ, start_response)
+            with Metric('perfmetrics.wsgi'):
+                return nextapp(environ, start_response)
         finally:
             statsd_client_stack.pop()
 

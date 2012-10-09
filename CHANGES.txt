@@ -2,6 +2,12 @@
 CHANGES
 =======
 
+1.0 (2012-10-09)
+----------------
+
+- Added 'perfmetrics.tween' and 'perfmetrics.wsgi' stats for measuring
+  request timing and counts.
+
 0.9.5 (2012-09-22)
 ------------------
 
