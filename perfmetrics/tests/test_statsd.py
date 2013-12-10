@@ -12,9 +12,8 @@ class TestStatsdClient(unittest.TestCase):
         from perfmetrics.statsd import StatsdClient
         return StatsdClient
 
-    def _make(self, patch_socket=True, error=None,
-              prefix='', gauge_suffix='.testhost'):
-        obj = self._class(prefix=prefix, gauge_suffix=gauge_suffix)
+    def _make(self, patch_socket=True, error=None, prefix=''):
+        obj = self._class(prefix=prefix)
 
         if patch_socket:
             self.sent = sent = []
@@ -33,19 +32,13 @@ class TestStatsdClient(unittest.TestCase):
         obj = self._make(patch_socket=False)
         self.assertIsNotNone(obj.udp_sock)
         self.assertIsNotNone(obj.addr)
-        self.assertEqual(obj.gauge_suffix, '.testhost')
         self.assertEqual(obj.prefix, '')
 
     def test_ctor_with_options(self):
-        obj = self._make(patch_socket=False, prefix='foo', gauge_suffix='bar')
+        obj = self._make(patch_socket=False, prefix='foo')
         self.assertIsNotNone(obj.udp_sock)
         self.assertIsNotNone(obj.addr)
         self.assertEqual(obj.prefix, 'foo.')
-        self.assertEqual(obj.gauge_suffix, '.bar')
-
-    def test_ctor_without_gauge_suffix(self):
-        obj = self._make(patch_socket=False, gauge_suffix='')
-        self.assertEqual(obj.gauge_suffix, '')
 
     def test_timing_with_rate_1(self):
         obj = self._make()
@@ -67,12 +60,7 @@ class TestStatsdClient(unittest.TestCase):
     def test_gauge_with_rate_1(self):
         obj = self._make()
         obj.gauge('some.thing', 50)
-        self.assertEqual(self.sent, [(b'some.thing.testhost:50|g', obj.addr)])
-
-    def test_gauge_with_suffix_override(self):
-        obj = self._make()
-        obj.gauge('some.thing', 50, suffix='.w00t')
-        self.assertEqual(self.sent, [(b'some.thing.w00t:50|g', obj.addr)])
+        self.assertEqual(self.sent, [(b'some.thing:50|g', obj.addr)])
 
     def test_gauge_with_rate_too_low(self):
         obj = self._make()
@@ -83,7 +71,7 @@ class TestStatsdClient(unittest.TestCase):
         obj = self._make()
         buf = []
         obj.gauge('some.thing', 50, buf=buf)
-        self.assertEqual(buf, ['some.thing.testhost:50|g'])
+        self.assertEqual(buf, ['some.thing:50|g'])
         self.assertEqual(self.sent, [])
 
     def test_incr_with_one_metric(self):

@@ -2,6 +2,17 @@
 CHANGES
 =======
 
+2.0 (2013-12-10)
+----------------
+
+- Added the @MetricMod decorator, which changes the name of metrics in
+  a given context. For example, "@MetricMod('xyz.%s')" adds a prefix.
+
+- Removed the "gauge suffix" feature. It was unnecessarily confusing.
+
+- Timing metrics produced by "@metric", "@metricmethod", and "@Metric"
+  now have a ".t" suffix by default to avoid naming conflicts.
+
 1.0 (2012-10-09)
 ----------------
 

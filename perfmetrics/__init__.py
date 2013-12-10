@@ -5,12 +5,13 @@
 from perfmetrics.clientstack import ClientStack
 from perfmetrics.clientstack import client_stack
 from perfmetrics.statsd import StatsdClient
+from perfmetrics.statsd import StatsdClientMod
+from perfmetrics.statsd import null_client
 from time import time
 import functools
 import os
 import random
-import socket
-import threading
+
 
 try:  # pragma no cover
     # Python 3
@@ -67,15 +68,12 @@ if 'statsd' not in uses_query:  # pragma: no cover
 def statsd_client_from_uri(uri):
     """Create and return StatsdClient.
 
-    A typical URI is ``statsd://localhost:8125``.  Optional
-    query parameters are ``prefix`` and ``gauge_suffix``.
-    The default prefix is an empty string; the default gauge_suffix
-    is ".<current_host_name>".
+    A typical URI is ``statsd://localhost:8125``.  An optional
+    query parameter is ``prefix``. The default prefix is an empty string.
     """
     parts = urlsplit(uri)
     if parts.scheme == 'statsd':
-        gauge_suffix = '.%s' % socket.gethostname()
-        kw = {'gauge_suffix': gauge_suffix}
+        kw = {}
         if parts.query:
             kw.update(parse_qsl(parts.query))
         return StatsdClient(parts.hostname, parts.port, **kw)
@@ -84,15 +82,29 @@ def statsd_client_from_uri(uri):
 
 
 class Metric(object):
-    """A factory of metric decorator/context managers."""
+    """Make metric decorator/context managers.
+
+    Examples:
+
+    @Metric('some.func')
+    def somefunc():
+        ...
+
+
+    @metric
+    def somefunc():
+        ...
+    """
 
     def __init__(self, stat=None, rate=1, method=False,
-                 count=True, timing=True, random=random.random):
+                 count=True, timing=True, timing_format='%s.t',
+                 random=random.random):  # testing hook
         self.stat = stat
         self.rate = rate
         self.method = method
         self.count = count
         self.timing = timing
+        self.timing_format = timing_format
         self.random = random
 
     def __call__(self, f):
@@ -106,6 +118,7 @@ class Metric(object):
         method = self.method
         count = self.count
         timing = self.timing
+        timing_format = self.timing_format
         random = self.random
 
         def call_with_metric(*args, **kw):
@@ -138,8 +151,8 @@ class Metric(object):
                     return f(*args, **kw)
                 finally:
                     elapsed_ms = int((time() - start) * 1000.0)
-                    client.timing(stat, elapsed_ms, rate, buf=buf,
-                                  rate_applied=True)
+                    client.timing(timing_format % stat, elapsed_ms,
+                                  rate, buf=buf, rate_applied=True)
                     if buf:
                         client.sendbuf(buf)
 
@@ -171,8 +184,8 @@ class Metric(object):
                     client.incr(stat, rate=rate, buf=buf, rate_applied=True)
                 if self.timing:
                     elapsed = int((time() - self.start) * 1000.0)
-                    client.timing(stat, elapsed, rate=rate, buf=buf,
-                                  rate_applied=True)
+                    client.timing(self.timing_format % stat, elapsed,
+                                  rate=rate, buf=buf, rate_applied=True)
                 if buf:
                     client.sendbuf(buf)
 
@@ -182,6 +195,47 @@ metric = Metric()
 
 # 'metricmethod' is a method decorator with default options.
 metricmethod = Metric(method=True)
+
+
+class MetricMod(object):
+    """Decorator/context manager that modifies the name of metrics in context.
+
+    format is a format string such as 'XYZ.%s'.
+    """
+
+    def __init__(self, format):
+        self.format = format
+
+    def __call__(self, f):
+        """Decorate a function or method to add a metric prefix in context.
+        """
+
+        def call_with_mod(*args, **kw):
+            stack = statsd_client_stack.stack
+            client = stack[-1] if stack else client_stack.default
+            if client is None:
+                # Statsd is not configured.
+                return f(*args, **kw)
+
+            stack.append(StatsdClientMod(client, self.format))
+            try:
+                return f(*args, **kw)
+            finally:
+                stack.pop()
+
+        return functools.update_wrapper(call_with_mod, f)
+
+    def __enter__(self):
+        stack = statsd_client_stack.stack
+        client = stack[-1] if stack else client_stack.default
+        if client is None:
+            stack.append(null_client)
+        else:
+            stack.append(StatsdClientMod(client, self.format))
+
+    def __exit__(self, _typ, _value, _tb):
+        stack = statsd_client_stack.stack
+        stack.pop()
 
 
 _uri = os.environ.get('STATSD_URI')

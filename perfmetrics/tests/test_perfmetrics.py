@@ -46,9 +46,9 @@ class Test_statsd_client_from_uri(unittest.TestCase):
         with self.assertRaises(ValueError):
             self._call('http://localhost:8125')
 
-    def test_with_custom_gauge_suffix(self):
-        client = self._call('statsd://localhost:8129?gauge_suffix=.spamalot')
-        self.assertEqual(client.gauge_suffix, '.spamalot')
+    def test_with_custom_prefix(self):
+        client = self._call('statsd://localhost:8129?prefix=spamalot')
+        self.assertEqual(client.prefix, 'spamalot.')
 
 
 class TestMetric(unittest.TestCase):
@@ -135,7 +135,7 @@ class TestMetric(unittest.TestCase):
 
         self.assertEqual(len(self.timing), 1)
         stat, ms, rate, _buf, rate_applied = self.timing[0]
-        self.assertEqual(stat, __name__ + '.spam')
+        self.assertEqual(stat, __name__ + '.spam.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
@@ -175,7 +175,7 @@ class TestMetric(unittest.TestCase):
 
         self.assertEqual(len(self.timing), 1)
         stat, ms, rate, _buf, rate_applied = self.timing[0]
-        self.assertEqual(stat, __name__ + '.Spam.f')
+        self.assertEqual(stat, __name__ + '.Spam.f.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
@@ -239,7 +239,7 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(len(self.timing), 1)
 
         stat, ms, rate, buf, rate_applied = self.timing[0]
-        self.assertEqual(stat, __name__ + '.spam')
+        self.assertEqual(stat, __name__ + '.spam.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
@@ -317,7 +317,7 @@ class TestMetric(unittest.TestCase):
 
         self.assertEqual(len(self.timing), 1)
         stat, ms, rate, _buf, rate_applied = self.timing[0]
-        self.assertEqual(stat, 'thing-done')
+        self.assertEqual(stat, 'thing-done.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
@@ -402,7 +402,7 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(len(self.changes), 0)
         self.assertEqual(len(self.timing), 1)
         stat, ms, rate, _buf, rate_applied = self.timing[0]
-        self.assertEqual(stat, 'thing-done')
+        self.assertEqual(stat, 'thing-done.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)

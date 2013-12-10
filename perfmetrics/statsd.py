@@ -10,8 +10,7 @@ class StatsdClient(object):
     Derived from statsd.py by Steve Ivy <steveivy@gmail.com>.
     """
 
-    def __init__(self, host='localhost', port=8125, prefix='',
-                 gauge_suffix=''):
+    def __init__(self, host='localhost', port=8125, prefix=''):
         # Resolve the host name early.
         info = socket.getaddrinfo(host, int(port), 0, socket.SOCK_DGRAM)
         family, socktype, proto, _canonname, addr = info[0]
@@ -22,13 +21,11 @@ class StatsdClient(object):
         if prefix and not prefix.endswith('.'):
             prefix = prefix + '.'
         self.prefix = prefix
-        if gauge_suffix and not gauge_suffix.startswith('.'):
-            gauge_suffix = '.' + gauge_suffix
-        self.gauge_suffix = gauge_suffix
 
     def timing(self, stat, value, rate=1, buf=None, rate_applied=False):
         """Log timing information in milliseconds.
 
+        >>> client = StatsdClient()
         >>> client.timing('some.time', 500)
         """
         if rate >= 1 or rate_applied or self.random() < rate:
@@ -38,16 +35,14 @@ class StatsdClient(object):
             else:
                 buf.append(s)
 
-    def gauge(self, stat, value, suffix=None, rate=1, buf=None,
-              rate_applied=False):
+    def gauge(self, stat, value, rate=1, buf=None, rate_applied=False):
         """Log a gauge value.
 
+        >>> client = StatsdClient()
         >>> client.gauge('pool_size', 5)
         """
         if rate >= 1 or rate_applied or self.random() < rate:
-            if suffix is None:
-                suffix = self.gauge_suffix or ''
-            s = '%s%s%s:%s|g' % (self.prefix, stat, suffix, value)
+            s = '%s%s:%s|g' % (self.prefix, stat, value)
             if buf is None:
                 self._send(s)
             else:
@@ -56,6 +51,7 @@ class StatsdClient(object):
     def incr(self, stat, count=1, rate=1, buf=None, rate_applied=False):
         """Increment a counter.
 
+        >>> client = StatsdClient()
         >>> client.incr('some.int')
         >>> client.incr('some.float', 0.5)
         """
@@ -74,6 +70,7 @@ class StatsdClient(object):
     def decr(self, stat, count=1, rate=1, buf=None, rate_applied=False):
         """Decrement a counter.
 
+        >>> client = StatsdClient()
         >>> client.decr('some.int')
         """
         self.incr(stat, -count, rate=rate, buf=buf, rate_applied=rate_applied)
@@ -92,3 +89,48 @@ class StatsdClient(object):
                 self.udp_sock.sendto('\n'.join(buf).encode('ascii'), self.addr)
         except IOError:
             self.log.exception("Failed to send UDP packet")
+
+
+class StatsdClientMod(object):
+    """Wrap StatsClient, modifying all stat names in context."""
+
+    def __init__(self, wrapped, format):
+        self._wrapped = wrapped
+        self.format = format
+
+    def timing(self, stat, *args, **kw):
+        self._wrapped.timing(self.format % stat, *args, **kw)
+
+    def gauge(self, stat, *args, **kw):
+        self._wrapped.gauge(self.format % stat, *args, **kw)
+
+    def incr(self, stat, *args, **kw):
+        self._wrapped.incr(self.format % stat, *args, **kw)
+
+    def decr(self, stat, *args, **kw):
+        self._wrapped.decr(self.format % stat, *args, **kw)
+
+    def sendbuf(self, buf):
+        self._wrapped.sendbuf(buf)
+
+
+class NullStatsdClient(object):
+    """No-op statsd client."""
+
+    def timing(self, stat, *args, **kw):
+        pass
+
+    def gauge(self, stat, *args, **kw):
+        pass
+
+    def incr(self, stat, *args, **kw):
+        pass
+
+    def decr(self, stat, *args, **kw):
+        pass
+
+    def sendbuf(self, buf):
+        pass
+
+
+null_client = NullStatsdClient()
