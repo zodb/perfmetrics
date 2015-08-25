@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import os
 import sys
 
-requires = ['setuptools']
+requires = ['setuptools', 'six']
 
 if sys.version_info[:2] < (2, 7):
     requires.append('unittest2')
