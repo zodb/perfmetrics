@@ -11,7 +11,7 @@ from time import time
 import functools
 import os
 import random
-import types
+import six
 
 
 try:  # pragma no cover
@@ -136,7 +136,7 @@ class Metric(object):
             if instance_stat:
                 stat = instance_stat
             elif method:
-                if isinstance(args[0], (type, types.ClassType)):
+                if isinstance(args[0], (type, six.class_types)):
                     cls = args[0]
                 else:
                     cls = args[0].__class__
