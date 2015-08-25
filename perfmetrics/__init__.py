@@ -11,6 +11,7 @@ from time import time
 import functools
 import os
 import random
+import types
 
 
 try:  # pragma no cover
@@ -135,7 +136,10 @@ class Metric(object):
             if instance_stat:
                 stat = instance_stat
             elif method:
-                cls = args[0].__class__
+                if isinstance(args[0], (type, types.ClassType)):
+                    cls = args[0]
+                else:
+                    cls = args[0].__class__
                 stat = '%s.%s.%s' % (cls.__module__, cls.__name__, func_name)
             else:
                 stat = func_full_name
