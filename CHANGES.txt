@@ -2,6 +2,17 @@
 CHANGES
 =======
 
+2.2 (2015-10-22)
+----------------
+
+- Update CHANGES
+
+2.1 (2015-10-22)
+----------------
+
+- Detect if decorated method is class method or object method and behave
+  accordingly.
+
 2.0 (2013-12-10)
 ----------------
 

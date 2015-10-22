@@ -12,8 +12,8 @@ here = os.path.dirname(__file__)
 README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
-setup(name='perfmetrics',
-      version='2.0',
+setup(name='netaccess_perfmetrics',
+      version='2.1',
       author='Shane Hathaway',
       author_email='shane@hathawaymix.org',
       description='Send performance metrics about Python code to Statsd',
