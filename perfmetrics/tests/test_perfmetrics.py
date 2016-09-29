@@ -97,13 +97,17 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(obj.rate, 1)
         self.assertTrue(obj.count)
         self.assertTrue(obj.timing)
+        self.assertIsNone(obj.wb_list)
 
     def test_ctor_with_options(self):
-        obj = self._class('spam.n.eggs', 0.1, count=False, timing=False)
+        m_wb = list()
+        obj = self._class('spam.n.eggs', 0.1, count=False, timing=False,
+                          wb_list=m_wb)
         self.assertEqual(obj.stat, 'spam.n.eggs')
         self.assertEqual(obj.rate, 0.1)
         self.assertFalse(obj.count)
         self.assertFalse(obj.timing)
+        self.assertEqual(obj.wb_list, m_wb)
 
     def test_decorate_function(self):
         args = []

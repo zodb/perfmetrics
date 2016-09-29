@@ -99,7 +99,7 @@ class Metric(object):
 
     def __init__(self, stat=None, rate=1, method=False,
                  count=True, timing=True, timing_format='%s.t',
-                 random=random.random):  # testing hook
+                 random=random.random, wb_list=None):  # testing hook
         self.stat = stat
         self.rate = rate
         self.method = method
@@ -107,6 +107,7 @@ class Metric(object):
         self.timing = timing
         self.timing_format = timing_format
         self.random = random
+        self.wb_list = wb_list
 
     def __call__(self, f):
         """Decorate a function or method so it can send statistics to statsd.
@@ -121,6 +122,7 @@ class Metric(object):
         timing = self.timing
         timing_format = self.timing_format
         random = self.random
+        wb_list = self.wb_list
 
         def call_with_metric(*args, **kw):
             if rate < 1 and random() >= rate:
@@ -155,6 +157,8 @@ class Metric(object):
                     return f(*args, **kw)
                 finally:
                     elapsed_ms = int((time() - start) * 1000.0)
+                    if isinstance(wb_list, list):
+                        wb_list.append(elapsed_ms)
                     client.timing(timing_format % stat, elapsed_ms,
                                   rate, buf=buf, rate_applied=True)
                     if buf:
@@ -188,6 +192,8 @@ class Metric(object):
                     client.incr(stat, rate=rate, buf=buf, rate_applied=True)
                 if self.timing:
                     elapsed = int((time() - self.start) * 1000.0)
+                    if isinstance(self.wb_list, list):
+                        self.wb_list.append(elapsed)
                     client.timing(self.timing_format % stat, elapsed,
                                   rate=rate, buf=buf, rate_applied=True)
                 if buf:
