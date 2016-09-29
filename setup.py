@@ -12,7 +12,7 @@ here = os.path.dirname(__file__)
 README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
-setup(name='netaccess_perfmetrics',
+setup(name='perfmetrics',
       version='2.3',
       author='Shane Hathaway',
       author_email='shane@hathawaymix.org',
@@ -26,7 +26,7 @@ setup(name='netaccess_perfmetrics',
                    "License :: Repoze Public License",
                    "Topic :: System :: Monitoring",
                    ],
-      url="https://github.com/NetAccessCorp/perfmetrics",
+      url="https://github.com/hathawsh/perfmetrics",
       license='BSD-derived (http://www.repoze.org/LICENSE.txt)',
       packages=find_packages(),
       include_package_data=True,
