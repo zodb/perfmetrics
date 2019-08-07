@@ -1,8 +1,4 @@
-
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 
 class Test_statsd_config_functions(unittest.TestCase):

@@ -1,12 +1,7 @@
-
 from setuptools import setup, find_packages
 import os
-import sys
 
 requires = ['setuptools']
-
-if sys.version_info[:2] < (2, 7):
-    requires.append('unittest2')
 
 here = os.path.dirname(__file__)
 README = open(os.path.join(here, 'README.rst')).read()
@@ -18,11 +13,16 @@ setup(name='perfmetrics',
       author_email='shane@hathawaymix.org',
       description='Send performance metrics about Python code to Statsd',
       long_description=README + '\n\n' + CHANGES,
-      # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+      python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
+      # Get strings from https://pypi.org/pypi?%3Aaction=list_classifiers
       classifiers=["Development Status :: 5 - Production/Stable",
                    "Intended Audience :: Developers",
                    "Programming Language :: Python :: 2",
+                   "Programming Language :: Python :: 2.7",
                    "Programming Language :: Python :: 3",
+                   "Programming Language :: Python :: 3.5",
+                   "Programming Language :: Python :: 3.6",
+                   "Programming Language :: Python :: 3.7",
                    "License :: Repoze Public License",
                    "Topic :: System :: Monitoring",
                    ],

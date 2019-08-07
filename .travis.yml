@@ -1,8 +1,10 @@
+dist: xenial
 language: python
 python:
-  - "3.2"
+  - "3.7"
+  - "3.6"
+  - "3.5"
   - "2.7"
-  - "2.6"
 install:
   - python setup.py develop
   - pip install nose coverage

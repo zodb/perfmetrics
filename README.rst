@@ -16,7 +16,7 @@ software.
 |TravisBadge|_
 
 .. |TravisBadge| image:: https://secure.travis-ci.org/hathawsh/perfmetrics.png?branch=master
-.. _TravisBadge: http://travis-ci.org/hathawsh/perfmetrics
+.. _TravisBadge: https://travis-ci.org/hathawsh/perfmetrics
 
 
 Usage
