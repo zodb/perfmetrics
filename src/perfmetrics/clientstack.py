@@ -5,6 +5,11 @@ from __future__ import print_function
 
 import threading
 
+from .statsd import statsd_client_from_uri
+
+string_types = (str,)
+if str is bytes: # pragma: no cover
+    string_types += (unicode,) # pylint:disable=undefined-variable
 
 class ClientStack(threading.local):
     """
@@ -40,3 +45,23 @@ class ClientStack(threading.local):
 
 
 client_stack = ClientStack()
+
+def statsd_client():
+    """Return the current StatsdClient for the thread.
+
+    Defaults to the global client set by `set_statsd_client`.
+    """
+    return client_stack.get()
+
+
+def set_statsd_client(client_or_uri):
+    """Set the global StatsdClient.
+
+    Accepts either a StatsdClient, a Statsd URI, or None (to clear the
+    global client).
+    """
+    if isinstance(client_or_uri, string_types):
+        client = statsd_client_from_uri(client_or_uri)
+    else:
+        client = client_or_uri
+    ClientStack.default = client

@@ -11,6 +11,20 @@ import logging
 import random
 import socket
 
+try:
+    # Python 3
+    from urllib.parse import urlsplit
+    from urllib.parse import parse_qsl
+    from urllib.parse import uses_query
+
+    basestring = str
+
+except ImportError: # pragma: no cover
+    # Python 2
+    from urlparse import urlsplit
+    from urlparse import parse_qsl
+    from urlparse import uses_query
+
 from .interfaces import IStatsdClient
 from .interfaces import implementer
 
@@ -20,7 +34,28 @@ __all__ = [
     'StatsdClient',
     'StatsdClientMod',
     'NullStatsdClient',
+    'statsd_client_from_uri',
 ]
+
+if 'statsd' not in uses_query:  # pragma: no cover
+    uses_query.append('statsd')
+
+def statsd_client_from_uri(uri):
+    """
+    Create and return :class:`perfmetrics.statsd.StatsdClient`.
+
+    A typical URI is ``statsd://localhost:8125``. An optional query
+    parameter is ``prefix``. The default prefix is an empty string.
+    """
+    parts = urlsplit(uri)
+    if parts.scheme != 'statsd':
+        raise ValueError("URI scheme not supported: %s" % uri)
+
+    kw = {}
+    if parts.query:
+        kw.update(parse_qsl(parts.query))
+    return StatsdClient(parts.hostname, parts.port, **kw)
+
 
 @implementer(IStatsdClient)
 class StatsdClient(object):

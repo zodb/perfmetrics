@@ -2,4 +2,4 @@
  API Reference
 ===============
 
-.. automodule:: perfmetrics.statsd
+.. automodule:: perfmetrics
