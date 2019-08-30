@@ -5,6 +5,11 @@ from __future__ import print_function
 
 import unittest
 
+from hamcrest import assert_that
+from nti.testing.matchers import validly_provides
+
+from perfmetrics.interfaces import IStatsdClient
+
 # pylint:disable=protected-access
 
 class MockSocket(object):
@@ -21,17 +26,35 @@ class MockSocket(object):
         pass
 
 
-class TestStatsdClient(unittest.TestCase):
+class TestBasics(unittest.TestCase):
 
     @property
     def _class(self):
         from perfmetrics.statsd import StatsdClient
         return StatsdClient
 
+    def _makeOne(self, *args, **kwargs):
+        kind = kwargs.pop('kind', None) or self._class
+        inst = kind(*args, **kwargs)
+        self.addCleanup(inst.close)
+        return inst
+
+    def test_implements(self):
+        assert_that(self._makeOne(), validly_provides(IStatsdClient))
+
+class TestNullStatsdClient(TestBasics):
+
+    @property
+    def _class(self):
+        from perfmetrics.statsd import NullStatsdClient
+        return NullStatsdClient
+
+class TestStatsdClient(TestBasics):
+
     sent = ()
 
     def _make(self, patch_socket=True, error=None, prefix=''):
-        obj = self._class(prefix=prefix)
+        obj = self._makeOne(prefix=prefix)
 
         if patch_socket:
             obj.udp_sock.close()
@@ -151,3 +174,15 @@ class TestStatsdClient(unittest.TestCase):
         obj = self._make()
         obj.sendbuf([])
         self.assertEqual(self.sent, [])
+
+class TestStatsdClientMod(TestStatsdClient):
+
+    @property
+    def _class(self):
+        from perfmetrics.statsd import StatsdClientMod
+        return StatsdClientMod
+
+    def _makeOne(self, *args, **kwargs):
+        kwargs['kind'] = super(TestStatsdClientMod, self)._class
+        wrapped = super(TestStatsdClientMod, self)._makeOne(*args, **kwargs)
+        return self._class(wrapped, '%s')

@@ -359,4 +359,7 @@ extlinks = {'issue': ('https://github.com/zodb/perfmetrics/issues/%s',
             'pr': ('https://github.com/zodb/perfmetrics/pull/%s',
                    'pull request #')}
 
-autodoc_default_flags = ['members', 'show-inheritance']
+autodoc_default_options = {
+    'members': True,
+    'show-inheritance': True,
+}

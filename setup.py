@@ -9,6 +9,12 @@ def read(fname, here=os.path.dirname(__file__)):
 README = read('README.rst')
 CHANGES = read('CHANGES.rst')
 
+tests_require = [
+    'zope.testrunner',
+    'nti.testing',
+    'pyhamcrest',
+]
+
 setup(
     name='perfmetrics',
     version='3.0.0.dev0',
@@ -44,16 +50,12 @@ setup(
     package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=True,
-    tests_require=[
-        'zope.testrunner',
-    ],
+    tests_require=tests_require,
     install_requires=[
         'setuptools',
     ],
     extras_require={
-        'test': [
-            'zope.testrunner',
-        ],
+        'test': tests_require,
         'docs': [
             'Sphinx',
             'repoze.sphinx.autointerface',

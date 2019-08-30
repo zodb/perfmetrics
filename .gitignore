@@ -16,3 +16,4 @@ local
 man
 parts
 docs/_build
+htmlcov/

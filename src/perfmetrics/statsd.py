@@ -1,12 +1,33 @@
+# -*- coding: utf-8 -*-
+"""
+Statsd client implementations.
+
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import logging
 import random
 import socket
 
+from .interfaces import IStatsdClient
+from .interfaces import implementer
+
 logger = logging.getLogger(__name__)
 
+__all__ = [
+    'StatsdClient',
+    'StatsdClientMod',
+    'NullStatsdClient',
+]
+
+@implementer(IStatsdClient)
 class StatsdClient(object):
-    """Send packets to statsd.
+    """
+    Send packets to statsd.
+
+    Default implementation of :class:`perfmetrics.interfaces.IStatsdClient`.
 
     Derived from statsd.py by Steve Ivy <steveivy@gmail.com>.
     """
@@ -25,7 +46,7 @@ class StatsdClient(object):
 
     def close(self):
         """
-        Release resources held by this object.
+        See :meth:`perfmetrics.interfaces.IStatsdClient.close`.
 
         .. versionadded:: 3.0
         """
@@ -34,10 +55,9 @@ class StatsdClient(object):
             self.udp_sock = None
 
     def timing(self, stat, value, rate=1, buf=None, rate_applied=False):
-        """Log timing information in milliseconds.
+        """
+        See :meth:`perfmetrics.interfaces.IStatsdClient.timing`.
 
-        >>> client = StatsdClient()
-        >>> client.timing('some.time', 500)
         """
         if rate >= 1 or rate_applied or self.random() < rate:
             s = '%s%s:%d|ms' % (self.prefix, stat, value)
@@ -47,10 +67,8 @@ class StatsdClient(object):
                 buf.append(s)
 
     def gauge(self, stat, value, rate=1, buf=None, rate_applied=False):
-        """Log a gauge value.
-
-        >>> client = StatsdClient()
-        >>> client.gauge('pool_size', 5)
+        """
+        See :meth:`perfmetrics.interfaces.IStatsdClient.gauge`.
         """
         if rate >= 1 or rate_applied or self.random() < rate:
             s = '%s%s:%s|g' % (self.prefix, stat, value)
@@ -60,11 +78,8 @@ class StatsdClient(object):
                 buf.append(s)
 
     def incr(self, stat, count=1, rate=1, buf=None, rate_applied=False):
-        """Increment a counter.
-
-        >>> client = StatsdClient()
-        >>> client.incr('some.int')
-        >>> client.incr('some.float', 0.5)
+        """
+        See :meth:`perfmetrics.interfaces.IStatsdClient.incr`.
         """
         if rate >= 1:
             s = '%s%s:%s|c' % (self.prefix, stat, count)
@@ -79,10 +94,8 @@ class StatsdClient(object):
             buf.append(s)
 
     def decr(self, stat, count=1, rate=1, buf=None, rate_applied=False):
-        """Decrement a counter.
-
-        >>> client = StatsdClient()
-        >>> client.decr('some.int')
+        """
+        See :meth:`perfmetrics.interfaces.IStatsdClient.decr`.
         """
         self.incr(stat, -count, rate=rate, buf=buf, rate_applied=rate_applied)
 
@@ -94,20 +107,44 @@ class StatsdClient(object):
             self.log.exception("Failed to send UDP packet")
 
     def sendbuf(self, buf):
-        """Send a UDP packet containing string lines."""
-        try:
-            if buf:
-                self.udp_sock.sendto('\n'.join(buf).encode('ascii'), self.addr)
-        except IOError:
-            self.log.exception("Failed to send UDP packet")
+        """
+        See :meth:`perfmetrics.interfaces.IStatsdClient.sendbuf`.
+        """
+        if buf:
+            self._send('\n'.join(buf))
 
-
+@implementer(IStatsdClient)
 class StatsdClientMod(object):
-    """Wrap StatsClient, modifying all stat names in context."""
+    """
+    Wrap `StatsdClient`, modifying all stat names in context.
+
+    .. versionchanged:: 3.0
+
+       The wrapped object's attributes are now accessible on this object.
+
+       This object now uses ``__slots__``.
+    """
+
+    __slots__ = (
+        '_wrapped',
+        'format',
+    )
 
     def __init__(self, wrapped, format):
         self._wrapped = wrapped
         self.format = format
+
+    def close(self):
+        self._wrapped.close()
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped, name)
+
+    def __setattr__(self, name, value):
+        if name in self.__slots__:
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._wrapped, name, value)
 
     def timing(self, stat, *args, **kw):
         self._wrapped.timing(self.format % stat, *args, **kw)
@@ -124,24 +161,27 @@ class StatsdClientMod(object):
     def sendbuf(self, buf):
         self._wrapped.sendbuf(buf)
 
-
+@implementer(IStatsdClient)
 class NullStatsdClient(object):
     """No-op statsd client."""
 
+    def close(self):
+        """Does nothing"""
+
     def timing(self, stat, *args, **kw):
-        pass
+        """Does nothing"""
 
     def gauge(self, stat, *args, **kw):
-        pass
+        """Does nothing"""
 
     def incr(self, stat, *args, **kw):
-        pass
+        """Does nothing"""
 
     def decr(self, stat, *args, **kw):
-        pass
+        """Does nothing"""
 
     def sendbuf(self, buf):
-        pass
+        """Does nothing"""
 
 
 null_client = NullStatsdClient()

@@ -508,7 +508,7 @@ class Test_tween(unittest.TestCase):
     def test_call_tween(self):
         clients = []
 
-        def dummy_handler(request):
+        def dummy_handler(_request):
             from perfmetrics import statsd_client
             client = statsd_client()
             self.addCleanup(client.close)
@@ -541,7 +541,7 @@ class Test_make_statsd_app(unittest.TestCase):
     def test_without_statsd_uri(self):
         clients = []
 
-        def dummy_app(environ, start_response):
+        def dummy_app(_environ, _start_response):
             from perfmetrics import statsd_client
             clients.append(statsd_client())
             return ['ok.']
@@ -555,7 +555,7 @@ class Test_make_statsd_app(unittest.TestCase):
     def test_with_statsd_uri(self):
         clients = []
 
-        def dummy_app(environ, start_response):
+        def dummy_app(_environ, _start_response):
             from perfmetrics import statsd_client
             clients.append(statsd_client())
             return ['ok.']

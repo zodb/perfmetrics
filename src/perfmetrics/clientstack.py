@@ -1,9 +1,14 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import threading
 
 
 class ClientStack(threading.local):
-    """Thread local stack of StatsdClients.
+    """
+    Thread local stack of StatsdClients.
 
     Applications and tests can either set the global statsd client using
     perfmetrics.set_statsd_client() or set a statsd client for each thread
@@ -15,6 +20,7 @@ class ClientStack(threading.local):
     default = None
 
     def __init__(self):
+        threading.local.__init__(self)
         self.stack = []
 
     def get(self):

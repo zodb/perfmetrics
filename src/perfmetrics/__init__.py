@@ -1,40 +1,48 @@
-
-"""perfmetrics is a library for sending software performance metrics to statsd.
+# -*- coding: utf-8 -*-
 """
+perfmetrics is a library for sending software performance metrics
+to statsd.
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from time import time
+import functools
+import os
+import random as stdrandom
+
 
 from perfmetrics.clientstack import ClientStack
 from perfmetrics.clientstack import client_stack
 from perfmetrics.statsd import StatsdClient
 from perfmetrics.statsd import StatsdClientMod
 from perfmetrics.statsd import null_client
-from time import time
-import functools
-import os
-import random
 
 
-try:  # pragma no cover
+try:
     # Python 3
     from urllib.parse import urlsplit
     from urllib.parse import parse_qsl
     from urllib.parse import uses_query
 
-    basestring = str  # @ReservedAssignment
+    basestring = str
 
-except ImportError:  # pragma no cover
+except ImportError: # pragma: no cover
     # Python 2
     from urlparse import urlsplit
     from urlparse import parse_qsl
     from urlparse import uses_query
 
 
-__all__ = ['metric',
-           'Metric',
-           'set_statsd_client',
-           'statsd_client',
-           'statsd_client_from_uri',
-           'statsd_client_stack',
-           ]
+__all__ = [
+    'metric',
+    'Metric',
+    'set_statsd_client',
+    'statsd_client',
+    'statsd_client_from_uri',
+    'statsd_client_stack',
+]
 
 
 statsd_client_stack = client_stack
@@ -66,23 +74,26 @@ if 'statsd' not in uses_query:  # pragma: no cover
 
 
 def statsd_client_from_uri(uri):
-    """Create and return StatsdClient.
+    """
+    Create and return :class:`perfmetrics.statsd.StatsdClient`.
 
-    A typical URI is ``statsd://localhost:8125``.  An optional
-    query parameter is ``prefix``. The default prefix is an empty string.
+    A typical URI is ``statsd://localhost:8125``. An optional query
+    parameter is ``prefix``. The default prefix is an empty string.
     """
     parts = urlsplit(uri)
-    if parts.scheme == 'statsd':
-        kw = {}
-        if parts.query:
-            kw.update(parse_qsl(parts.query))
-        return StatsdClient(parts.hostname, parts.port, **kw)
-    else:
+    if parts.scheme != 'statsd':
         raise ValueError("URI scheme not supported: %s" % uri)
+
+    kw = {}
+    if parts.query:
+        kw.update(parse_qsl(parts.query))
+    return StatsdClient(parts.hostname, parts.port, **kw)
+
 
 
 class Metric(object):
-    """Make metric decorator/context managers.
+    """
+    Make metric decorator/context managers.
 
     Examples:
 
@@ -98,7 +109,7 @@ class Metric(object):
 
     def __init__(self, stat=None, rate=1, method=False,
                  count=True, timing=True, timing_format='%s.t',
-                 random=random.random):  # testing hook
+                 random=stdrandom.random):  # testing hook
         self.stat = stat
         self.rate = rate
         self.method = method
@@ -106,9 +117,11 @@ class Metric(object):
         self.timing = timing
         self.timing_format = timing_format
         self.random = random
+        self.start = None
 
     def __call__(self, f):
-        """Decorate a function or method so it can send statistics to statsd.
+        """
+        Decorate a function or method so it can send statistics to statsd.
         """
         func_name = f.__name__
         func_full_name = '%s.%s' % (f.__module__, func_name)
@@ -121,7 +134,7 @@ class Metric(object):
         timing_format = self.timing_format
         random = self.random
 
-        def call_with_metric(*args, **kw):
+        def call_with_metric(*args, **kw): # pylint:disable=too-many-branches
             if rate < 1 and random() >= rate:
                 # Ignore this sample.
                 return f(*args, **kw)
@@ -240,7 +253,7 @@ class MetricMod(object):
 
 _uri = os.environ.get('STATSD_URI')
 if _uri:
-    set_statsd_client(_uri)  # pragma no cover
+    set_statsd_client(_uri)  # pragma: no cover
 
 
 #==============================================================================
