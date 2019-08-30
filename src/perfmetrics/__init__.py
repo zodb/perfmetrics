@@ -280,7 +280,16 @@ def tween(handler, registry):
 
 
 def make_statsd_app(nextapp, _globals=None, statsd_uri=''):
-    """Create a WSGI filter app that sets up Statsd for each request."""
+    """
+    Create a WSGI filter app that sets up Statsd for each request.
+
+    If no *statsd_uri* is given, returns *nextapp* unchanged.
+
+    .. versionchanged:: 3.0
+
+       The returned app callable makes the statsd client that it
+       uses available at the ``statsd_client`` attribute.
+    """
     if not statsd_uri:
         # Disabled.
         return nextapp
@@ -294,5 +303,7 @@ def make_statsd_app(nextapp, _globals=None, statsd_uri=''):
                 return nextapp(environ, start_response)
         finally:
             statsd_client_stack.pop()
+
+    app.statsd_client = client
 
     return app

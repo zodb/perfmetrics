@@ -1,4 +1,24 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import unittest
+
+# pylint:disable=protected-access
+
+class MockSocket(object):
+    def __init__(self, error=None):
+        self.sent = []
+        self.error = error
+
+    def sendto(self, data, addr):
+        if self.error is not None:
+            raise self.error
+        self.sent.append((data, addr))
+
+    def close(self):
+        pass
 
 
 class TestStatsdClient(unittest.TestCase):
@@ -8,20 +28,17 @@ class TestStatsdClient(unittest.TestCase):
         from perfmetrics.statsd import StatsdClient
         return StatsdClient
 
+    sent = ()
+
     def _make(self, patch_socket=True, error=None, prefix=''):
         obj = self._class(prefix=prefix)
 
         if patch_socket:
-            self.sent = sent = []
+            obj.udp_sock.close()
+            obj.udp_sock = MockSocket(error)
+            self.sent = obj.udp_sock.sent
 
-            class DummySocket(object):
-                def sendto(self, data, addr):
-                    if error is not None:
-                        raise error
-                    sent.append((data, addr))
-
-            obj.udp_sock = DummySocket()
-
+        self.addCleanup(obj.close)
         return obj
 
     def test_ctor_with_defaults(self):

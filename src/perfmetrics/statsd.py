@@ -3,6 +3,7 @@ import logging
 import random
 import socket
 
+logger = logging.getLogger(__name__)
 
 class StatsdClient(object):
     """Send packets to statsd.
@@ -15,12 +16,22 @@ class StatsdClient(object):
         info = socket.getaddrinfo(host, int(port), 0, socket.SOCK_DGRAM)
         family, socktype, proto, _canonname, addr = info[0]
         self.addr = addr
-        self.log = logging.getLogger(__name__)
+        self.log = logger
         self.udp_sock = socket.socket(family, socktype, proto)
         self.random = random.random  # Testing hook
         if prefix and not prefix.endswith('.'):
             prefix = prefix + '.'
         self.prefix = prefix
+
+    def close(self):
+        """
+        Release resources held by this object.
+
+        .. versionadded:: 3.0
+        """
+        if self.udp_sock:
+            self.udp_sock.close()
+            self.udp_sock = None
 
     def timing(self, stat, value, rate=1, buf=None, rate_applied=False):
         """Log timing information in milliseconds.

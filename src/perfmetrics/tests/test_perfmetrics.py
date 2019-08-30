@@ -1,3 +1,26 @@
+# -*- coding: utf-8 -*-
+##############################################################################
+#
+# Copyright (c) 2008, 2019 Zope Foundation and Contributors.
+# All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
+
+"""
+Implementation of load methods.
+
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import unittest
 
 
@@ -18,7 +41,9 @@ class Test_statsd_config_functions(unittest.TestCase):
         set_statsd_client('statsd://localhost:8125')
         from perfmetrics import StatsdClient
         from perfmetrics import statsd_client
-        self.assertIsInstance(statsd_client(), StatsdClient)
+        client = statsd_client()
+        self.addCleanup(client.close)
+        self.assertIsInstance(client, StatsdClient)
 
     def test_configured_with_other_client(self):
         other_client = object()
@@ -32,7 +57,9 @@ class Test_statsd_client_from_uri(unittest.TestCase):
 
     def _call(self, uri):
         from perfmetrics import statsd_client_from_uri
-        return statsd_client_from_uri(uri)
+        client = statsd_client_from_uri(uri)
+        self.addCleanup(client.close)
+        return client
 
     def test_local_uri(self):
         client = self._call('statsd://localhost:8129')
@@ -45,6 +72,29 @@ class Test_statsd_client_from_uri(unittest.TestCase):
     def test_with_custom_prefix(self):
         client = self._call('statsd://localhost:8129?prefix=spamalot')
         self.assertEqual(client.prefix, 'spamalot.')
+
+
+class MockStatsdClient(object):
+    def __init__(self):
+        self.changes = []
+        self.timings = []
+        self.sentbufs = []
+
+    def incr(self, stat, count=1, rate=1, buf=None,
+             rate_applied=False):
+        self.changes.append((stat, count, rate, buf, rate_applied))
+        if buf is not None:
+            buf.append('count_line')
+
+    def timing(self, stat, ms, rate, buf=None,
+               rate_applied=False):
+        self.timings.append((stat, ms, rate, buf, rate_applied))
+        if buf is not None:
+            buf.append('timing_line')
+
+    def sendbuf(self, buf):
+        self.sentbufs.append(buf)
+
 
 
 class TestMetric(unittest.TestCase):
@@ -65,27 +115,9 @@ class TestMetric(unittest.TestCase):
     tearDown = setUp
 
     def _add_client(self):
-        self.changes = changes = []
-        self.timing = timing = []
-        self.sentbufs = sentbufs = []
-
-        class DummyStatsdClient:
-            def incr(self, stat, count=1, rate=1, buf=None,
-                     rate_applied=False):
-                changes.append((stat, count, rate, buf, rate_applied))
-                if buf is not None:
-                    buf.append('count_line')
-
-            def timing(self, stat, ms, rate, buf=None,
-                       rate_applied=False):
-                timing.append((stat, ms, rate, buf, rate_applied))
-                if buf is not None:
-                    buf.append('timing_line')
-
-            def sendbuf(self, buf):
-                sentbufs.append(buf)
-
-        self.statsd_client_stack.push(DummyStatsdClient())
+        client = MockStatsdClient()
+        self.statsd_client_stack.push(client)
+        return client
 
     def test_ctor_with_defaults(self):
         obj = self._class()
@@ -118,26 +150,26 @@ class TestMetric(unittest.TestCase):
         del args[:]
 
         # Call with a statsd client configured.
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        stat, delta, rate, buf, rate_applied = self.changes[0]
+        stat, delta, rate, buf, rate_applied = client.changes[0]
         self.assertEqual(stat, __name__ + '.spam')
         self.assertEqual(delta, 1)
         self.assertEqual(rate, 1)
         self.assertEqual(buf, ['count_line', 'timing_line'])
         self.assertTrue(rate_applied)
 
-        self.assertEqual(len(self.timing), 1)
-        stat, ms, rate, _buf, rate_applied = self.timing[0]
+        self.assertEqual(len(client.timings), 1)
+        stat, ms, rate, _buf, rate_applied = client.timings[0]
         self.assertEqual(stat, __name__ + '.spam.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
         self.assertTrue(rate_applied)
 
-        self.assertEqual(self.sentbufs, [['count_line', 'timing_line']])
+        self.assertEqual(client.sentbufs, [['count_line', 'timing_line']])
 
     def test_decorate_method(self):
         args = []
@@ -157,27 +189,27 @@ class TestMetric(unittest.TestCase):
         del args[:]
 
         # Call with a statsd client configured.
-        self._add_client()
+        client = self._add_client()
         Spam().f(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        self.assertEqual(len(self.changes), 1)
-        stat, delta, rate, buf, rate_applied = self.changes[0]
+        self.assertEqual(len(client.changes), 1)
+        stat, delta, rate, buf, rate_applied = client.changes[0]
         self.assertEqual(stat, __name__ + '.Spam.f')
         self.assertEqual(delta, 1)
         self.assertEqual(rate, 1)
         self.assertEqual(buf, ['count_line', 'timing_line'])
         self.assertTrue(rate_applied)
 
-        self.assertEqual(len(self.timing), 1)
-        stat, ms, rate, _buf, rate_applied = self.timing[0]
+        self.assertEqual(len(client.timings), 1)
+        stat, ms, rate, _buf, rate_applied = client.timings[0]
         self.assertEqual(stat, __name__ + '.Spam.f.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
         self.assertTrue(rate_applied)
 
-        self.assertEqual(self.sentbufs, [['count_line', 'timing_line']])
+        self.assertEqual(client.sentbufs, [['count_line', 'timing_line']])
 
     def test_decorate_without_timing(self):
         args = []
@@ -196,20 +228,20 @@ class TestMetric(unittest.TestCase):
         del args[:]
 
         # Call with a statsd client configured.
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        self.assertEqual(len(self.changes), 1)
-        stat, delta, rate, buf, rate_applied = self.changes[0]
+        self.assertEqual(len(client.changes), 1)
+        stat, delta, rate, buf, rate_applied = client.changes[0]
         self.assertEqual(stat, 'spammy')
         self.assertEqual(delta, 1)
         self.assertEqual(rate, 0.01)
         self.assertIsNone(buf)
         self.assertTrue(rate_applied)
 
-        self.assertEqual(len(self.timing), 0)
-        self.assertEqual(self.sentbufs, [])
+        self.assertEqual(len(client.timings), 0)
+        self.assertEqual(client.sentbufs, [])
 
     def test_decorate_without_count(self):
         args = []
@@ -228,13 +260,13 @@ class TestMetric(unittest.TestCase):
         del args[:]
 
         # Call with a statsd client configured.
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
-        self.assertEqual(self.changes, [])
-        self.assertEqual(len(self.timing), 1)
+        self.assertEqual(client.changes, [])
+        self.assertEqual(len(client.timings), 1)
 
-        stat, ms, rate, buf, rate_applied = self.timing[0]
+        stat, ms, rate, buf, rate_applied = client.timings[0]
         self.assertEqual(stat, __name__ + '.spam.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
@@ -242,7 +274,7 @@ class TestMetric(unittest.TestCase):
         self.assertIsNone(buf)
         self.assertTrue(rate_applied)
 
-        self.assertEqual(self.sentbufs, [])
+        self.assertEqual(client.sentbufs, [])
 
     def test_decorate_with_neither_timing_nor_count(self):
         args = []
@@ -258,13 +290,13 @@ class TestMetric(unittest.TestCase):
         del args[:]
 
         # Call with a statsd client configured.
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
-        self.assertEqual(self.changes, [])
-        self.assertEqual(len(self.timing), 0)
+        self.assertEqual(client.changes, [])
+        self.assertEqual(len(client.timings), 0)
 
-        self.assertEqual(self.sentbufs, [])
+        self.assertEqual(client.sentbufs, [])
 
     def test_ignore_function_sample(self):
         args = []
@@ -275,16 +307,16 @@ class TestMetric(unittest.TestCase):
             args.append((x, y))
             return 77
 
-        self._add_client()
+        client = self._add_client()
         self.assertEqual(77, spam(6, 1))
 
         # The function was called
         self.assertEqual(args, [(6, 1)])
 
         # No packets were sent because the random value was too high.
-        self.assertFalse(self.changes)
-        self.assertFalse(self.timing)
-        self.assertFalse(self.sentbufs)
+        self.assertFalse(client.changes)
+        self.assertFalse(client.timings)
+        self.assertFalse(client.sentbufs)
 
     def test_as_context_manager_with_stat_name(self):
         args = []
@@ -300,26 +332,26 @@ class TestMetric(unittest.TestCase):
         del args[:]
 
         # Call with a statsd client configured.
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        stat, delta, rate, buf, rate_applied = self.changes[0]
+        stat, delta, rate, buf, rate_applied = client.changes[0]
         self.assertEqual(stat, 'thing-done')
         self.assertEqual(delta, 1)
         self.assertEqual(rate, 1)
         self.assertEqual(buf, ['count_line', 'timing_line'])
         self.assertTrue(rate_applied)
 
-        self.assertEqual(len(self.timing), 1)
-        stat, ms, rate, _buf, rate_applied = self.timing[0]
+        self.assertEqual(len(client.timings), 1)
+        stat, ms, rate, _buf, rate_applied = client.timings[0]
         self.assertEqual(stat, 'thing-done.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
         self.assertTrue(rate_applied)
 
-        self.assertEqual(self.sentbufs, [['count_line', 'timing_line']])
+        self.assertEqual(client.sentbufs, [['count_line', 'timing_line']])
 
     def test_ignore_context_manager_sample(self):
         args = []
@@ -330,16 +362,16 @@ class TestMetric(unittest.TestCase):
                 args.append((x, y))
                 return 88
 
-        self._add_client()
+        client = self._add_client()
         self.assertEqual(88, spam(6, 716))
 
         # The function was called
         self.assertEqual(args, [(6, 716)])
 
         # No packets were sent because the random value was too high.
-        self.assertFalse(self.changes)
-        self.assertFalse(self.timing)
-        self.assertFalse(self.sentbufs)
+        self.assertFalse(client.changes)
+        self.assertFalse(client.timings)
+        self.assertFalse(client.sentbufs)
 
     def test_as_context_manager_without_stat_name(self):
         args = []
@@ -349,13 +381,13 @@ class TestMetric(unittest.TestCase):
             with Metric():
                 args.append((x, y))
 
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        self.assertFalse(self.changes)
-        self.assertFalse(self.timing)
-        self.assertFalse(self.sentbufs)
+        self.assertFalse(client.changes)
+        self.assertFalse(client.timings)
+        self.assertFalse(client.sentbufs)
 
     def test_as_context_manager_without_timing(self):
         args = []
@@ -365,22 +397,22 @@ class TestMetric(unittest.TestCase):
             with Metric('thing-done', timing=False):
                 args.append((x, y))
 
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        self.assertEqual(len(self.changes), 1)
+        self.assertEqual(len(client.changes), 1)
 
-        stat, delta, rate, buf, rate_applied = self.changes[0]
+        stat, delta, rate, buf, rate_applied = client.changes[0]
         self.assertEqual(stat, 'thing-done')
         self.assertEqual(delta, 1)
         self.assertEqual(rate, 1)
         self.assertEqual(buf, ['count_line'])
         self.assertTrue(rate_applied)
 
-        self.assertEqual(len(self.timing), 0)
+        self.assertEqual(len(client.timings), 0)
 
-        self.assertEqual(self.sentbufs, [['count_line']])
+        self.assertEqual(client.sentbufs, [['count_line']])
 
     def test_as_context_manager_without_count(self):
         args = []
@@ -391,20 +423,20 @@ class TestMetric(unittest.TestCase):
                 args.append((x, y))
 
         # Call with a statsd client configured.
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        self.assertEqual(len(self.changes), 0)
-        self.assertEqual(len(self.timing), 1)
-        stat, ms, rate, _buf, rate_applied = self.timing[0]
+        self.assertEqual(len(client.changes), 0)
+        self.assertEqual(len(client.timings), 1)
+        stat, ms, rate, _buf, rate_applied = client.timings[0]
         self.assertEqual(stat, 'thing-done.t')
         self.assertGreaterEqual(ms, 0)
         self.assertLess(ms, 10000)
         self.assertEqual(rate, 1)
         self.assertTrue(rate_applied)
 
-        self.assertEqual(self.sentbufs, [['timing_line']])
+        self.assertEqual(client.sentbufs, [['timing_line']])
 
     def test_as_context_manager_with_neither_count_nor_timing(self):
         args = []
@@ -415,13 +447,28 @@ class TestMetric(unittest.TestCase):
                 args.append((x, y))
 
         # Call with a statsd client configured.
-        self._add_client()
+        client = self._add_client()
         spam(6, 1)
         self.assertEqual(args, [(6, 1)])
 
-        self.assertEqual(len(self.changes), 0)
-        self.assertEqual(len(self.timing), 0)
-        self.assertEqual(self.sentbufs, [])
+        self.assertEqual(len(client.changes), 0)
+        self.assertEqual(len(client.timings), 0)
+        self.assertEqual(client.sentbufs, [])
+
+
+class MockRegistry(object):
+    def __init__(self, statsd_uri=None):
+        self.settings = {}
+        if statsd_uri:
+            self.settings['statsd_uri'] = statsd_uri
+
+class MockConfig(object):
+    def __init__(self, statsd_uri=None):
+        self.registry = MockRegistry(statsd_uri)
+        self.tweens = []
+
+    def add_tween(self, name):
+        self.tweens.append(name)
 
 
 class Test_includeme(unittest.TestCase):
@@ -431,30 +478,17 @@ class Test_includeme(unittest.TestCase):
         includeme(config)
 
     def _make_config(self, statsd_uri):
-        self.tweens = tweens = []
-
-        class DummyRegistry:
-            settings = {}
-            if statsd_uri:
-                settings['statsd_uri'] = statsd_uri
-
-        class DummyConfig:
-            registry = DummyRegistry()
-
-            def add_tween(self, name):
-                tweens.append(name)
-
-        return DummyConfig()
+        return MockConfig(statsd_uri)
 
     def test_without_statsd_uri(self):
         config = self._make_config(None)
         self._call(config)
-        self.assertFalse(self.tweens)
+        self.assertFalse(config.tweens)
 
     def test_with_statsd_uri(self):
         config = self._make_config('statsd://localhost:9999')
         self._call(config)
-        self.assertEqual(self.tweens, ['perfmetrics.tween'])
+        self.assertEqual(config.tweens, ['perfmetrics.tween'])
 
 
 class Test_tween(unittest.TestCase):
@@ -469,17 +503,16 @@ class Test_tween(unittest.TestCase):
         return tween(handler, registry)
 
     def _make_registry(self, statsd_uri):
-        class DummyRegistry:
-            settings = {'statsd_uri': statsd_uri}
-
-        return DummyRegistry()
+        return MockRegistry(statsd_uri)
 
     def test_call_tween(self):
         clients = []
 
         def dummy_handler(request):
             from perfmetrics import statsd_client
-            clients.append(statsd_client())
+            client = statsd_client()
+            self.addCleanup(client.close)
+            clients.append(client)
             return 'ok!'
 
         registry = self._make_registry('statsd://localhost:9999')
@@ -500,7 +533,10 @@ class Test_make_statsd_app(unittest.TestCase):
 
     def _call(self, nextapp, statsd_uri):
         from perfmetrics import make_statsd_app
-        return make_statsd_app(nextapp, None, statsd_uri)
+        app = make_statsd_app(nextapp, None, statsd_uri)
+        if hasattr(app, 'statsd_client'):
+            self.addCleanup(app.statsd_client.close)
+        return app
 
     def test_without_statsd_uri(self):
         clients = []
