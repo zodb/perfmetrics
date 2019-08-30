@@ -43,11 +43,10 @@ __all__ = [
 ]
 
 
-
-#: 'metric' is a function decorator with default options.
+#: @metric:
 metric = Metric()
 
-#: 'metricmethod' is a method decorator with default options.
+#: @metricmethod:
 metricmethod = Metric(method=True)
 
 

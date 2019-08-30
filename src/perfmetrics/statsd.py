@@ -46,6 +46,7 @@ def statsd_client_from_uri(uri):
 
     A typical URI is ``statsd://localhost:8125``. An optional query
     parameter is ``prefix``. The default prefix is an empty string.
+
     """
     parts = urlsplit(uri)
     if parts.scheme != 'statsd':

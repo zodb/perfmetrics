@@ -47,18 +47,25 @@ class ClientStack(threading.local):
 client_stack = ClientStack()
 
 def statsd_client():
-    """Return the current StatsdClient for the thread.
+    """
+    Return the current StatsdClient for the thread.
 
-    Defaults to the global client set by `set_statsd_client`.
+    Returns the thread-local client if there is one, or the global
+    client if there is one, or None.
     """
     return client_stack.get()
 
 
 def set_statsd_client(client_or_uri):
-    """Set the global StatsdClient.
+    """
+    Set the global StatsdClient.
 
-    Accepts either a StatsdClient, a Statsd URI, or None (to clear the
-    global client).
+    The ``client_or_uri`` can be a StatsdClient, a ``statsd://`` URI,
+    or None.
+
+    Note that when the perfmetrics module is imported, it
+    looks for the ``STATSD_URI`` environment variable and calls
+    `set_statsd_client` if that variable is found.
     """
     if isinstance(client_or_uri, string_types):
         client = statsd_client_from_uri(client_or_uri)

@@ -19,17 +19,42 @@ logger = __import__('logging').getLogger(__name__)
 
 class Metric(object):
     """
-    Make metric decorator/context managers.
+    Metric(stat=None, rate=1, method=False, count=True, timing=True)
 
-    Examples::
+    A decorator or context manager with options.
 
-        @Metric('some.func')
-        def somefunc():
-            ...
+    ``stat`` is the name of the metric to send; set it to None to use
+    the name of the function or method. ``rate`` lets you reduce the
+    number of packets sent to Statsd by selecting a random sample; for
+    example, set it to 0.1 to send one tenth of the packets. If the
+    ``method`` parameter is true, the default metric name is based on
+    the method's class name rather than the module name. Setting
+    ``count`` to False disables the counter statistics sent to Statsd.
+    Setting ``timing`` to False disables the timing statistics sent to
+    Statsd.
 
-        @metric
-        def somefunc():
-            ...
+    Sample use as a decorator::
+
+        @Metric('frequent_func', rate=0.1, timing=False)
+        def frequent_func():
+            "Do something fast and frequently."
+
+    Sample use as a context manager::
+
+        def do_something():
+            with Metric('doing_something'):
+                pass
+
+    If perfmetrics sends packets too frequently, UDP packets may be lost
+    and the application performance may be affected.  You can reduce
+    the number of packets and the CPU overhead using the ``Metric``
+    decorator with options instead of ``metric`` or ``metricmethod``.
+    The decorator example above uses a sample rate and a static metric name.
+    It also disables the collection of timing information.
+
+    When using Metric as a context manager, you must provide the
+    ``stat`` parameter or nothing will be recorded.
+
     """
 
     def __init__(self, stat=None, rate=1, method=False,
