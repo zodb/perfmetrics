@@ -1,0 +1,21 @@
+include *.in
+include *.rst
+include AUTHORS
+include LICENSE.txt
+include setup.cfg
+include nose2.cfg
+include tox.ini
+include .travis.yml
+include .coveragerc
+include .isort.cfg
+
+recursive-include src *.py
+recursive-include src *.po
+recursive-include src *.pot
+recursive-include src *.zcml
+include *.txt
+
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-exclude docs changelog.rst
