@@ -1,0 +1,64 @@
+=========
+ CHANGES
+=========
+
+3.0 (unreleased)
+================
+
+- Drop support for EOL Python 2.6, 3.2, 3.3 and 3.4.
+
+- Add support for Python 3.5, 3.6, and 3.7.
+
+2.0 (2013-12-10)
+================
+
+- Added the ``@MetricMod`` decorator, which changes the name of
+  metrics in a given context. For example, ``@MetricMod('xyz.%s')``
+  adds a prefix.
+
+- Removed the "gauge suffix" feature. It was unnecessarily confusing.
+
+- Timing metrics produced by ``@metric``, ``@metricmethod``, and
+  ``@Metric`` now have a ".t" suffix by default to avoid naming
+  conflicts.
+
+1.0 (2012-10-09)
+================
+
+- Added 'perfmetrics.tween' and 'perfmetrics.wsgi' stats for measuring
+  request timing and counts.
+
+0.9.5 (2012-09-22)
+==================
+
+- Added an optional Pyramid tween and a similar WSGI filter app
+  that sets up the Statsd client for each request.
+
+0.9.4 (2012-09-08)
+==================
+
+- Optimized the use of reduced sample rates.
+
+0.9.3 (2012-09-08)
+==================
+
+- Support the ``STATSD_URI`` environment variable.
+
+0.9.2 (2012-09-01)
+==================
+
+- ``Metric`` can now be used as either a decorator or a context
+  manager.
+
+- Made the signature of StatsdClient more like James Socol's
+  StatsClient.
+
+0.9.1 (2012-09-01)
+==================
+
+- Fixed package metadata.
+
+0.9 (2012-08-31)
+================
+
+- Initial release.

@@ -1,6 +1,6 @@
-
-Introduction
-============
+=============
+ perfmetrics
+=============
 
 The perfmetrics package provides a simple way to add software performance
 metrics to Python libraries and applications.  Use perfmetrics to find the
@@ -13,11 +13,8 @@ no I/O delays to applications and little CPU overhead.  It can work
 equally well in threaded (synchronous) or event-driven (asynchronous)
 software.
 
-|TravisBadge|_
-
-.. |TravisBadge| image:: https://secure.travis-ci.org/hathawsh/perfmetrics.png?branch=master
-.. _TravisBadge: https://travis-ci.org/hathawsh/perfmetrics
-
+.. image:: https://travis-ci.org/zodb/perfmetrics.svg?branch=master
+    :target: https://travis-ci.org/zodb/perfmetrics
 
 Usage
 =====
@@ -66,7 +63,6 @@ installs Graphite and Statsd in a custom location without root access.
 
 .. _`graphite_buildout example`: https://github.com/hathawsh/graphite_buildout
 
-
 Pyramid and WSGI
 ================
 
@@ -93,7 +89,6 @@ pipeline::
     pipeline =
         statsd
         egg:myapp#myentrypoint
-
 
 Threading
 =========

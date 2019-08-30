@@ -1,14 +1,18 @@
-from setuptools import setup, find_packages
 import os
+from setuptools import setup, find_packages
 
 requires = ['setuptools']
 
-here = os.path.dirname(__file__)
-README = open(os.path.join(here, 'README.rst')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
+
+def read(fname, here=os.path.dirname(__file__)):
+    with open(os.path.join(here, fname)) as f:
+        return f.read()
+
+README = read('README.rst')
+CHANGES = read('CHANGES.rst')
 
 setup(name='perfmetrics',
-      version='2.0',
+      version='3.0.0.dev0',
       author='Shane Hathaway',
       author_email='shane@hathawaymix.org',
       description='Send performance metrics about Python code to Statsd',
@@ -28,7 +32,7 @@ setup(name='perfmetrics',
                    "License :: Repoze Public License",
                    "Topic :: System :: Monitoring",
                    ],
-      url="https://github.com/hathawsh/perfmetrics",
+      url="https://github.com/zodb/perfmetrics",
       license='BSD-derived (http://www.repoze.org/LICENSE.txt)',
       packages=find_packages(),
       include_package_data=True,
