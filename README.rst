@@ -13,13 +13,17 @@ no I/O delays to applications and little CPU overhead.  It can work
 equally well in threaded (synchronous) or event-driven (asynchronous)
 software.
 
+Complete documentation is hosted at https://perfmetrics.readthedocs.io
+
 .. image:: https://travis-ci.org/zodb/perfmetrics.svg?branch=master
    :target: https://travis-ci.org/zodb/perfmetrics
 
 .. image:: https://coveralls.io/repos/github/zodb/perfmetrics/badge.svg
    :target: https://coveralls.io/github/zodb/perfmetrics
 
-
+.. image:: https://readthedocs.org/projects/perfmetrics/badge/?version=latest
+   :target: https://perfmetrics.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 
 Usage
 =====
