@@ -14,7 +14,12 @@ equally well in threaded (synchronous) or event-driven (asynchronous)
 software.
 
 .. image:: https://travis-ci.org/zodb/perfmetrics.svg?branch=master
-    :target: https://travis-ci.org/zodb/perfmetrics
+   :target: https://travis-ci.org/zodb/perfmetrics
+
+.. image:: https://coveralls.io/repos/github/zodb/perfmetrics/badge.svg
+   :target: https://coveralls.io/github/zodb/perfmetrics
+
+
 
 Usage
 =====

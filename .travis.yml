@@ -1,14 +1,21 @@
 dist: xenial
 language: python
 python:
-  - "pypy"
-  - "pypy3"
-  - "3.7"
-  - "3.6"
-  - "3.5"
-  - "2.7"
+  - 2.7
+  - pypy
+  - 3.5
+  - 3.6
+  - 3.7
+  - pypy3
 install:
-  - python setup.py develop
-  - pip install nose coverage
+  - pip install -U pip setuptools
+  - pip install -U coveralls coverage
+  - pip install -U -e ".[test]"
+cache: pip
 script:
-  nosetests --with-coverage --cover-package=perfmetrics --cover-branches
+  - coverage run -m zope.testrunner --test-path=src  --auto-color
+after_success:
+  - coverage report
+  - coveralls
+before_cache:
+    - rm -f $HOME/.cache/pip/log/debug.log
