@@ -9,6 +9,14 @@
 
 - Add support for Python 3.5, 3.6, and 3.7.
 
+- Compile the performance-sensitive parts with Cython, leading to a
+  10-30% speed improvement. See
+  https://github.com/zodb/perfmetrics/issues/17.
+
+- Make decorated functions and methods configurable at runtime, not
+  just compile time. See
+  https://github.com/zodb/perfmetrics/issues/11.
+
 2.0 (2013-12-10)
 ================
 

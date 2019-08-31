@@ -59,6 +59,11 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(obj.rate, 1)
         self.assertTrue(obj.count)
         self.assertTrue(obj.timing)
+        from perfmetrics import _util
+        if not _util.PURE_PYTHON: # pragma: no cover
+            self.assertIn('_metric', str(obj))
+        else:
+            self.assertNotIn('_metric', str(obj))
 
     def test_ctor_with_options(self):
         obj = self._makeOne('spam.n.eggs', 0.1, count=False, timing=False)
@@ -112,22 +117,24 @@ class TestMetric(unittest.TestCase):
         class Spam:
             @metricmethod
             def f(self, x, y=2):
-                args.append((x, y))
+                args.append((self, x, y))
 
         self.assertEqual(Spam.f.__module__, __name__)
         self.assertEqual(Spam.f.__name__, 'f')
 
         # Call with no statsd client configured.
-        Spam().f(4, 5)
-        self.assertEqual(args, [(4, 5)])
+        spam = Spam()
+        spam.f(4, 5)
+        self.assertEqual(args, [(spam, 4, 5)])
         del args[:]
 
         # Call with a statsd client configured.
         client = self._add_client()
-        Spam().f(6, 1)
-        self.assertEqual(args, [(6, 1)])
+        spam.f(6, 1)
+        self.assertEqual(args, [(spam, 6, 1)])
 
         self.assertEqual(len(client.changes), 1)
+        __traceback_info__ = client.changes
         stat, delta, rate, buf, rate_applied = client.changes[0]
         self.assertEqual(stat, __name__ + '.Spam.f')
         self.assertEqual(delta, 1)
@@ -144,6 +151,54 @@ class TestMetric(unittest.TestCase):
         self.assertTrue(rate_applied)
 
         self.assertEqual(client.sentbufs, [['count_line', 'timing_line']])
+
+    def test_decorate_can_change_timing(self):
+        metric = self._makeOne()
+        args = []
+        @metric
+        def spam(x, y=2):
+            args.append((x, y))
+
+        metric = spam.__wrapped__ if not hasattr(spam, 'metric_timing') else spam
+
+        self.assertTrue(metric.metric_timing)
+        self.assertTrue(metric.metric_count)
+        self.assertEqual(1, metric.metric_rate)
+        metric.metric_rate = 0
+        metric.metric_timing = False
+        metric.metric_count = False
+        # Call with a statsd client configured.
+        client = self._add_client()
+        spam(6, 1)
+        self.assertEqual(args, [(6, 1)])
+
+        self.assertEqual(len(client.changes), 0)
+
+    def test_decorate_method_can_change_timing(self):
+        metricmethod = self._makeOne(method=True)
+        args = []
+        class Spam(object):
+            @metricmethod
+            def f(self, x, y=2):
+                args.append((self, x, y))
+
+        metric = Spam.f
+        if not hasattr(metric, 'metric_timing'):
+            metric = Spam.f.__wrapped__ # pylint:disable=no-member
+        self.assertTrue(metric.metric_timing)
+        self.assertTrue(metric.metric_count)
+        self.assertEqual(1, metric.metric_rate)
+        metric.metric_rate = 0
+        metric.metric_timing = False
+        metric.metric_count = False
+        # Call with a statsd client configured.
+        client = self._add_client()
+        spam = Spam()
+        spam.f(6, 1)
+        self.assertEqual(args, [(spam, 6, 1)])
+
+        self.assertEqual(len(client.changes), 0)
+
 
     def test_decorate_without_timing(self):
         args = []
@@ -413,6 +468,9 @@ class SequenceDecorator(object):
     def __exit__(self, t, v, tb):
         self.metric.__exit__(t, v, tb)
         self.metricmod.__exit__(t, v, tb)
+
+    def __str__(self):
+        return str(self.metricmod)
 
 
 class TestMetricMod(TestMetric):

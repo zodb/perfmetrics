@@ -1,5 +1,7 @@
 [run]
 source = perfmetrics
+omit =
+     */bench_*.py
 
 
 [report]

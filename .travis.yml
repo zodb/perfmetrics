@@ -15,7 +15,9 @@ cache: pip
 script:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then pip install -U pylint && pylint --rcfile=.pylintrc perfmetrics -f parseable -r n; fi
   - coverage run -m zope.testrunner --test-path=src  --auto-color
+  - coverage run -a -m zope.testrunner --test-path=src  --auto-color
 after_success:
+  - coverage combine
   - coverage report
   - coveralls
 before_cache:

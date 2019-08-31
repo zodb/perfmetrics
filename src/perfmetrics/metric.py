@@ -1,3 +1,4 @@
+# cython: auto_pickle=False,embedsignature=True,always_allow_keywords=False
 # -*- coding: utf-8 -*-
 """
 Implementation of metrics.
@@ -8,14 +9,123 @@ from __future__ import division
 from __future__ import print_function
 
 from time import time
+from types import MethodType
+from weakref import WeakKeyDictionary
 import functools
 import random as stdrandom
 
+from .clientstack import statsd_client
 from .clientstack import client_stack as statsd_client_stack
 from .statsd import StatsdClientMod
 from .statsd import null_client
 
 logger = __import__('logging').getLogger(__name__)
+
+class _MethodLikeMixin(object):
+    __slots__ = ()
+    # We may be wrapped by another decorator,
+    # so we can't count on __get__ being called.
+    # But if it is, we need to act like a bound method.
+    if str is bytes: # pragma: no cover
+        def __get__(self, inst, klass):
+            if inst is None:
+                return self
+            return MethodType(self, inst, klass)
+    else:
+        def __get__(self, inst, klass):
+            if inst is None:
+                return self
+            return MethodType(self, inst)
+
+class _AbstractMetricImpl(_MethodLikeMixin):
+    __slots__ = (
+        'f',
+        'random',
+        'metric_timing',
+        'metric_count',
+        'metric_rate',
+        'timing_format',
+        '__wrapped__',
+        '__dict__',
+    )
+    stat_name = None
+    def __init__(self, f, timing, count, rate, timing_format, random):
+        self.__wrapped__ = None
+        self.f = f
+        self.metric_timing = timing
+        self.metric_count = count
+        self.metric_rate = rate
+        self.timing_format = timing_format
+        self.random = random
+
+    def __call__(self, *args, **kwargs):
+        if self.metric_rate < 1 and self.random() >= self.metric_rate:
+            # Ignore this sample.
+            return self.f(*args, **kwargs)
+
+        client = statsd_client()
+
+        if client is None:
+            # No statsd client has been configured.
+            return self.f(*args, **kwargs)
+
+        stat = self.stat_name or self._compute_stat(args)
+        if self.metric_timing:
+            if self.metric_count:
+                buf = []
+                client.incr(stat, 1, self.metric_rate, buf=buf, rate_applied=True)
+            else:
+                buf = None
+
+            start = time()
+
+            try:
+                return self.f(*args, **kwargs)
+            finally:
+                end = time()
+                elapsed_ms = int((end - start) * 1000.0)
+                client.timing(self.timing_format % stat, elapsed_ms,
+                              self.metric_rate, buf=buf, rate_applied=True)
+                if buf:
+                    client.sendbuf(buf)
+
+        else:
+            if self.metric_count:
+                client.incr(stat, 1, self.metric_rate, rate_applied=True)
+            return self.f(*args, **kwargs)
+
+    def _compute_stat(self, args):
+        raise NotImplementedError
+
+class _GivenStatMetricImpl(_AbstractMetricImpl):
+    __slots__ = (
+        'stat_name',
+    )
+    def __init__(self, stat_name, *args):
+        self.stat_name = stat_name
+        super(_GivenStatMetricImpl, self).__init__(*args)
+
+    def _compute_stat(self, args): # pragma: no cover
+        return self.stat_name
+
+class _MethodMetricImpl(_AbstractMetricImpl):
+    __slots__ = (
+        'klass_dict',
+    )
+
+    def __init__(self, *args):
+        self.klass_dict = WeakKeyDictionary()
+        super(_MethodMetricImpl, self).__init__(*args)
+
+    def _compute_stat(self, args):
+        klass = args[0].__class__
+        try:
+            stat_name = self.klass_dict[klass]
+        except KeyError:
+            stat_name = '%s.%s.%s' % (klass.__module__, klass.__name__, self.f.__name__)
+            self.klass_dict[klass] = stat_name
+        return stat_name
+
 
 class Metric(object):
     """
@@ -48,12 +158,23 @@ class Metric(object):
     If perfmetrics sends packets too frequently, UDP packets may be lost
     and the application performance may be affected.  You can reduce
     the number of packets and the CPU overhead using the ``Metric``
-    decorator with options instead of ``metric`` or ``metricmethod``.
+    decorator with options instead of `metric` or `metricmethod`.
     The decorator example above uses a sample rate and a static metric name.
     It also disables the collection of timing information.
 
     When using Metric as a context manager, you must provide the
     ``stat`` parameter or nothing will be recorded.
+
+    .. versionchanged:: 3.0
+
+        When used as a decorator, set ``__wrapped__`` on the returned object, even
+        on Python 2.
+
+    .. versionchanged:: 3.0
+
+        When used as a decorator, the returned object
+        has ``metric_timing``, ``metric_count`` and ``metric_rate``
+        attributes that can be changed to alter its behaviour.
 
     """
 
@@ -67,7 +188,7 @@ class Metric(object):
         self.timing = timing
         self.timing_format = timing_format
         self.random = random
-        self.start = None
+        self.start = 0.0
 
     def __call__(self, f):
         """
@@ -76,56 +197,20 @@ class Metric(object):
         func_name = f.__name__
         func_full_name = '%s.%s' % (f.__module__, func_name)
 
-        instance_stat = self.stat
-        rate = self.rate
-        method = self.method
-        count = self.count
-        timing = self.timing
-        timing_format = self.timing_format
-        random = self.random
-        get_client = statsd_client_stack.get
+        if self.method:
+            metric = _MethodMetricImpl(f, self.timing, self.count,
+                                       self.rate, self.timing_format,
+                                       self.random)
+        else:
+            metric = _GivenStatMetricImpl(
+                self.stat or func_full_name,
+                f, self.timing, self.count,
+                self.rate, self.timing_format,
+                self.random)
 
-        def call_with_metric(*args, **kw): # pylint:disable=too-many-branches
-            if rate < 1 and random() >= rate:
-                # Ignore this sample.
-                return f(*args, **kw)
-
-            client = get_client()
-
-            if client is None:
-                # No statsd client has been configured.
-                return f(*args, **kw)
-
-            if instance_stat:
-                stat = instance_stat
-            elif method:
-                cls = args[0].__class__
-                stat = '%s.%s.%s' % (cls.__module__, cls.__name__, func_name)
-            else:
-                stat = func_full_name
-
-            if timing:
-                if count:
-                    buf = []
-                    client.incr(stat, 1, rate, buf=buf, rate_applied=True)
-                else:
-                    buf = None
-                start = time()
-                try:
-                    return f(*args, **kw)
-                finally:
-                    elapsed_ms = int((time() - start) * 1000.0)
-                    client.timing(timing_format % stat, elapsed_ms,
-                                  rate, buf=buf, rate_applied=True)
-                    if buf:
-                        client.sendbuf(buf)
-
-            else:
-                if count:
-                    client.incr(stat, 1, rate, rate_applied=True)
-                return f(*args, **kw)
-
-        return functools.update_wrapper(call_with_metric, f)
+        metric = functools.update_wrapper(metric, f)
+        metric.__wrapped__ = f # Python 2 doesn't set this, but it's handy to have.
+        return metric
 
     # Metric can also be used as a context manager.
 
@@ -165,6 +250,7 @@ class MetricMod(object):
         """Decorate a function or method to add a metric prefix in context.
         """
 
+        @functools.wraps(f)
         def call_with_mod(*args, **kw):
             client = statsd_client_stack.get()
             if client is None:
@@ -177,7 +263,8 @@ class MetricMod(object):
             finally:
                 statsd_client_stack.pop()
 
-        return functools.update_wrapper(call_with_mod, f)
+        call_with_mod.__wrapped__ = f
+        return call_with_mod
 
     def __enter__(self):
         client = statsd_client_stack.get()
@@ -189,3 +276,7 @@ class MetricMod(object):
 
     def __exit__(self, _typ, _value, _tb):
         statsd_client_stack.pop()
+
+# pylint:disable=wrong-import-position,wrong-import-order
+from perfmetrics._util import import_c_accel
+import_c_accel(globals(), 'perfmetrics._metric')

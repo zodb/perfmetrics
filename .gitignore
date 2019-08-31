@@ -17,3 +17,5 @@ man
 parts
 docs/_build
 htmlcov/
+src/perfmetrics/metric.c
+src/perfmetrics/metric.html
