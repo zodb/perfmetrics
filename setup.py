@@ -13,6 +13,7 @@ tests_require = [
     'zope.testrunner',
     'nti.testing',
     'pyhamcrest',
+    'pyperf',
 ]
 
 setup(

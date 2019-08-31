@@ -29,6 +29,12 @@ class ClientStack(threading.local):
         self.stack = []
 
     def get(self):
+        """
+        Return the current StatsdClient for the thread.
+
+        Returns the thread-local client if there is one, or the global
+        client if there is one, or None.
+        """
         stack = self.stack
         return stack[-1] if stack else self.default
 
@@ -46,14 +52,9 @@ class ClientStack(threading.local):
 
 client_stack = ClientStack()
 
-def statsd_client():
-    """
-    Return the current StatsdClient for the thread.
-
-    Returns the thread-local client if there is one, or the global
-    client if there is one, or None.
-    """
-    return client_stack.get()
+# Just expose the bound method, don't wrap it,
+# for speed.
+statsd_client = client_stack.get
 
 
 def set_statsd_client(client_or_uri):
