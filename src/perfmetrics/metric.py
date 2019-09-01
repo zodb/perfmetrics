@@ -26,16 +26,18 @@ class _MethodLikeMixin(object):
     # We may be wrapped by another decorator,
     # so we can't count on __get__ being called.
     # But if it is, we need to act like a bound method.
-    if str is bytes: # pragma: no cover
-        def __get__(self, inst, klass):
-            if inst is None:
-                return self
-            return MethodType(self, inst, klass)
-    else:
-        def __get__(self, inst, klass):
-            if inst is None:
-                return self
-            return MethodType(self, inst)
+    #
+    # When we compile with Cython, we can't dynamically choose
+    # a __get__ impl; the last one defined wins, so we must take the conditional
+    # inside the method.
+    def __get__(self, inst, klass):
+        if inst is None:
+            return self
+        # Python 2 takes 3 arguments, Python 3 just two. Actually you
+        # can get away with passing just the first two to Python 2,
+        # but you get '<bound method ?.foo>' and possibly other issues
+        # (im_class is None), so it's best to pass all three.
+        return MethodType(self, inst, klass) if str is bytes else MethodType(self, inst)
 
 class _AbstractMetricImpl(_MethodLikeMixin):
     __slots__ = (
@@ -70,6 +72,8 @@ class _AbstractMetricImpl(_MethodLikeMixin):
             return self.f(*args, **kwargs)
 
         stat = self.stat_name or self._compute_stat(args)
+        # TODO: A lot of this is duplicated with __exit__.
+        # Can we do better?
         if self.metric_timing:
             if self.metric_count:
                 buf = []

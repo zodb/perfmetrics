@@ -114,7 +114,7 @@ class TestMetric(unittest.TestCase):
         args = []
         metricmethod = self._makeOne(method=True)
 
-        class Spam:
+        class Spam(object):
             @metricmethod
             def f(self, x, y=2):
                 args.append((self, x, y))
