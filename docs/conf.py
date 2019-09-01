@@ -33,8 +33,11 @@
 import os
 import sys
 import pkg_resources
+os.environ['PURE_PYTHON'] = '1'
+
 sys.path.append(os.path.abspath('../src'))
 rqmt = pkg_resources.require('perfmetrics')[0]
+
 
 
 extensions = [

@@ -1,6 +1,11 @@
 import os
-from setuptools import setup, find_packages
+import sys
 
+from setuptools import setup
+from setuptools import find_packages
+from setuptools import Extension
+
+PYPY = hasattr(sys, 'pypy_version_info')
 
 def read(fname, here=os.path.dirname(__file__)):
     with open(os.path.join(here, fname)) as f:
@@ -15,6 +20,101 @@ tests_require = [
     'pyhamcrest',
     'pyperf',
 ]
+
+###
+# Cython
+###
+
+# Based on code from
+# http://cython.readthedocs.io/en/latest/src/reference/compilation.html#distributing-cython-modules
+def _dummy_cythonize(extensions, **_kwargs):
+    for extension in extensions:
+        sources = []
+        for sfile in extension.sources:
+            path, ext = os.path.splitext(sfile)
+            if ext in ('.pyx', '.py'):
+                ext = '.c'
+                sfile = path + ext
+            sources.append(sfile)
+        extension.sources[:] = sources
+    return extensions
+
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    # The .c files had better already exist, as they should in
+    # an sdist.
+    cythonize = _dummy_cythonize
+
+ext_modules = []
+
+# Modules we want to compile with Cython. These *should* have a parallel
+# .pxd file (with a leading _) defining cython attributes.
+# They should also have a cython comment at the top giving options,
+# and mention that they are compiled with cython on CPython.
+# The bottom of the file must call import_c_accel.
+# We use the support from Cython 28 to be able to parallel compile
+# and cythonize modules to a different name with a leading _.
+# This list is derived from the profile of bm_simple_iface
+# https://github.com/NextThought/nti.externalization/commit/0bc4733aa8158acd0d23c14de2f9347fb698c040
+if not PYPY:
+    def _source(m, ext):
+        # Yes, always /.
+        m = m.replace('.', '/')
+        return 'src/perfmetrics/' + m + '.' + ext
+    def _py_source(m):
+        return _source(m, 'py')
+    def _pxd(m):
+        return _source(m, 'pxd')
+    def _c(m):
+        return _source(m, 'c')
+    # Each module should list the python name of the
+    # modules it cimports from as deps. We'll generate the rest.
+    # (Not that this actually appears to do anything right now.)
+
+    for mod_name, deps in (
+            ('metric', ()),
+    ):
+        deps = ([_py_source(mod) for mod in deps]
+                + [_pxd(mod) for mod in deps]
+                + [_c(mod) for mod in deps])
+
+        source = _py_source(mod_name)
+        # 'foo.bar' -> 'foo._bar'
+        mod_name_parts = mod_name.rsplit('.', 1)
+        mod_name_parts[-1] = '_' + mod_name_parts[-1]
+        mod_name = '.'.join(mod_name_parts)
+
+
+        ext_modules.append(
+            Extension(
+                'perfmetrics.' + mod_name,
+                sources=[source],
+                depends=deps,
+                define_macros=[('CYTHON_TRACE', '1')],
+            ))
+
+    try:
+        ext_modules = cythonize(
+            ext_modules,
+            annotate=True,
+            compiler_directives={
+                #'linetrace': True,
+                'infer_types': True,
+                'language_level': '3str',
+                'always_allow_keywords': False,
+                'nonecheck': False,
+            },
+        )
+    except ValueError:
+        # 'invalid literal for int() with base 10: '3str'
+        # This is seen when an older version of Cython is installed.
+        # It's a bit of a chicken-and-egg, though, because installing
+        # from dev-requirements first scans this egg for its requirements
+        # before doing any updates.
+        import traceback
+        traceback.print_exc()
+        ext_modules = _dummy_cythonize(ext_modules)
 
 setup(
     name='perfmetrics',
@@ -49,6 +149,7 @@ setup(
     license='BSD-derived (http://www.repoze.org/LICENSE.txt)',
     packages=find_packages('src'),
     package_dir={'': 'src'},
+    ext_modules=ext_modules,
     include_package_data=True,
     zip_safe=True,
     tests_require=tests_require,
