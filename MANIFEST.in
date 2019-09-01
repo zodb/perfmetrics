@@ -9,7 +9,10 @@ include .travis.yml
 include .coveragerc
 include .isort.cfg
 include .pylintrc
+include *.toml
+include *.yml
 
+recursive-include src *.pxd
 recursive-include src *.py
 recursive-include src *.c
 recursive-exclude src *.html

@@ -1,0 +1,36 @@
+environment:
+  global:
+    TWINE_USERNAME: __token__
+    TWINE_PASSWORD:
+      secure: uXZ6Juhz2hElaTsaJ2HnetZqz0mmNO3phE2IV3Am7hgfOAbaM4x3IeNSS7bMWL27TMGsOndOrKNgQTodirUt+vLZzZ+NYKjMImuM04P68BfIGDeZlA8ynYWG0vtjpqUTfrbhppyLuypHmzusV7+cnlSq4uaE3BtZ+bSwUZUYaeEQRAnCivzLki318kzOCLUUjDuyPSgyTdV+Z4GXOtUzGInvsbiU7k+9PbpE10915afTg82GUHHYn9BC5laBvxI1A07HX/JJZ6QjwS9+KjmEtw==
+
+
+  matrix:
+    - python: 27
+    - python: 27-x64
+    - python: 35
+    - python: 35-x64
+    - python: 36
+    - python: 36-x64
+    - python: 37
+    - python: 37-x64
+install:
+  - "SET PATH=C:\\Python%PYTHON%;c:\\Python%PYTHON%\\scripts;%PATH%"
+  - echo "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64 > "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.bat"
+  - python -m pip install -U pip setuptools wheel cython
+  - pip install -e .[test]
+
+build_script:
+  - python -W ignore setup.py -q bdist_wheel
+
+test_script:
+  - python -m zope.testrunner --test-path=src
+
+artifacts:
+  - path: 'dist\*.whl'
+    name: wheel
+
+deploy_script:
+  - ps: if ($env:APPVEYOR_REPO_TAG -eq $TRUE) { pip install twine; twine upload dist/* }
+
+deploy: on
