@@ -34,3 +34,7 @@ deploy_script:
   - ps: if ($env:APPVEYOR_REPO_TAG -eq $TRUE) { pip install twine; twine upload dist/* }
 
 deploy: on
+
+cache:
+  - "%TMP%\\py\\"
+  - '%LOCALAPPDATA%\pip\Cache'
