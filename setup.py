@@ -161,6 +161,7 @@ setup(
         'docs': [
             'Sphinx >= 2.1.2',
             'repoze.sphinx.autointerface',
+            'pyhamcrest',
             'sphinx_rtd_theme',
         ],
     },

@@ -17,6 +17,10 @@
   just compile time. See
   https://github.com/zodb/perfmetrics/issues/11.
 
+- Include support for testing applications instrumented with
+  perfmetrics in ``perfmetrics.testing``. This was previously release
+  externally as ``nti.fakestatsd``. See https://github.com/zodb/perfmetrics/issues/9.
+
 2.0 (2013-12-10)
 ================
 
