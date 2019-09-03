@@ -19,6 +19,15 @@
   10-30% speed improvement. See
   https://github.com/zodb/perfmetrics/issues/17.
 
+- Caution: Metric names are enforced to be native strings (as a result
+  of Cython compilation); they've always had to be ASCII-only but
+  previously Unicode was allowed on Python 2. This is usually
+  automatically the case when used as a decorator. On Python 2 using
+  ``from __future__ import unicode_literals`` can cause problems
+  (raising TypeError) when manually constructing ``Metric`` objects. A
+  quick workaround is to set the environment variable
+  ``PERFMETRICS_PURE_PYTHON`` before importing perfmetrics.
+
 - Make decorated functions and methods configurable at runtime, not
   just compile time. See
   https://github.com/zodb/perfmetrics/issues/11.
