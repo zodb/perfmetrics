@@ -15,11 +15,21 @@ software.
 
 Complete documentation is hosted at https://perfmetrics.readthedocs.io
 
+.. image:: https://img.shields.io/pypi/v/perfmetrics.svg
+   :target: https://pypi.org/project/perfmetrics/
+   :alt: Latest release
+
+.. image:: https://img.shields.io/pypi/pyversions/perfmetrics.svg
+   :target: https://pypi.org/project/perfmetrics/
+   :alt: Supported Python versions
+
 .. image:: https://travis-ci.org/zodb/perfmetrics.svg?branch=master
    :target: https://travis-ci.org/zodb/perfmetrics
+   :alt: Travis CI Build Status
 
 .. image:: https://coveralls.io/repos/github/zodb/perfmetrics/badge.svg
    :target: https://coveralls.io/github/zodb/perfmetrics
+   :alt: Code Coverage
 
 .. image:: https://readthedocs.org/projects/perfmetrics/badge/?version=latest
    :target: https://perfmetrics.readthedocs.io/en/latest/?badge=latest
