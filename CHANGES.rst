@@ -2,8 +2,8 @@
  CHANGES
 =========
 
-3.0 (unreleased)
-================
+3.0.0 (2019-09-03)
+==================
 
 - Drop support for EOL Python 2.6, 3.2, 3.3 and 3.4.
 
