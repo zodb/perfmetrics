@@ -21,6 +21,12 @@
   perfmetrics in ``perfmetrics.testing``. This was previously release
   externally as ``nti.fakestatsd``. See https://github.com/zodb/perfmetrics/issues/9.
 
+- Read the ``PERFMETRICS_DISABLE_DECORATOR`` environment variable when
+  ``perfmetrics`` is imported, and if it is set, make the decorators ``@metric``,
+  ``@metricmethod``, ``@Metric(...)`` and ``@MetricMod(...)`` return
+  the function unchanged. This can be helpful for certain kinds of
+  introspection tests. See https://github.com/zodb/perfmetrics/issues/15
+
 2.0 (2013-12-10)
 ================
 

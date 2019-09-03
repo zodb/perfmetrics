@@ -55,3 +55,53 @@ class Test_statsd_client_from_uri(unittest.TestCase):
     def test_with_custom_prefix(self):
         client = self._call('statsd://localhost:8129?prefix=spamalot')
         self.assertEqual(client.prefix, 'spamalot.')
+
+
+class TestDisabledDecorators(unittest.TestCase):
+
+    def setUp(self):
+        import sys
+        import os
+        __import__('perfmetrics')
+        self.old_mod = sys.modules['perfmetrics']
+
+        del sys.modules['perfmetrics']
+        os.environ['PERFMETRICS_DISABLE_DECORATOR'] = '1'
+        self.perfmetrics = __import__("perfmetrics")
+        del os.environ['PERFMETRICS_DISABLE_DECORATOR']
+
+    def tearDown(self):
+        import sys
+        sys.modules['perfmetrics'] = self.old_mod
+
+    def test_metric(self):
+
+        def func():
+            'does nothing'
+
+        func2 = self.perfmetrics.metric(func)
+        self.assertIs(func, func2)
+
+    def test_metricmethod(self):
+
+        def func():
+            'does nothing'
+
+        func2 = self.perfmetrics.metricmethod(func)
+        self.assertIs(func, func2)
+
+    def test_Metric(self):
+
+        def func():
+            'does nothing'
+
+        func2 = self.perfmetrics.Metric()(func)
+        self.assertIs(func, func2)
+
+    def test_MetricMod(self):
+
+        def func():
+            'does nothing'
+
+        func2 = self.perfmetrics.MetricMod('%s')(func)
+        self.assertIs(func, func2)

@@ -43,6 +43,18 @@ and methods that should send timing and call statistics to Statsd.
 Add the decorators to any function or method that could be a bottleneck,
 including library functions.
 
+.. caution::
+
+   These decorators are generic and cause the actual function
+   signature to be lost, replaced with ``*args, **kwargs``. This can
+   break certain types of introspection, including `zope.interface
+   validation <https://github.com/zodb/perfmetrics/issues/15>`_. As a
+   workaround, setting the environment variable
+   ``PERFMETRICS_DISABLE_DECORATOR`` *before* importing perfmetrics or
+   code that uses it will cause ``@perfmetrics.metric``, ``@perfmetrics.metricmethod``,
+   ``@perfmetrics.Metric(...)`` and ``@perfmetrics.MetricMod(...)`` to
+   return the original function unchanged.
+
 Sample::
 
     from perfmetrics import metric

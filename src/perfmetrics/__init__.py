@@ -42,6 +42,19 @@ __all__ = [
     'make_statsd_app',
 ]
 
+class _DisabledMetricDecorator(Metric):
+
+    def __call__(self, f):
+        return f
+
+class _DisabledMetricModDecorator(MetricMod):
+
+    def __call__(self, f):
+        return f
+
+if os.environ.get('PERFMETRICS_DISABLE_DECORATOR'):
+    Metric = _DisabledMetricDecorator
+    MetricMod = _DisabledMetricModDecorator
 
 #: @metric:
 metric = Metric()
