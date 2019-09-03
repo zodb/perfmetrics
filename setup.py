@@ -118,7 +118,7 @@ if not PYPY:
 
 setup(
     name='perfmetrics',
-    version='3.0.0',
+    version='3.0.1.dev0',
     author='Shane Hathaway',
     author_email='shane@hathawaymix.org',
     description='Send performance metrics about Python code to Statsd',
