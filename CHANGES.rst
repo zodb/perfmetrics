@@ -2,10 +2,10 @@
  CHANGES
 =========
 
-3.0.1 (unreleased)
+3.1.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Add support for Python 3.8.
 
 
 3.0.0 (2019-09-03)

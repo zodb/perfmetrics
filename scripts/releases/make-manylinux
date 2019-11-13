@@ -1,0 +1,33 @@
+#!/bin/bash
+# Initially based on a snippet from the greenlet project.
+# This needs to be run from the root of the project.
+# To update: docker pull quay.io/pypa/manylinux2010_x86_64
+set -e
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ -d /io -a -d /opt/python ]; then
+    # Running inside docker
+    cd /io
+    rm -rf wheelhouse
+    mkdir wheelhouse
+    for variant in `ls -d /opt/python/cp*`; do
+        echo "Building $variant"
+        mkdir /tmp/build
+        cd /tmp/build
+        git clone /io io
+        cd io
+        $variant/bin/pip install -U pip
+        $variant/bin/pip install -U cython setuptools
+        PATH=$variant/bin:$PATH $variant/bin/python setup.py bdist_wheel
+        auditwheel show dist/*.whl
+        auditwheel repair dist/*.whl
+        cp wheelhouse/*.whl /io/wheelhouse
+        cd /io
+        rm -rf /tmp/build
+    done
+    rm -rf dist build *.egg-info
+    exit 0
+fi
+
+docker run --rm -ti -v "$(pwd):/io" quay.io/pypa/manylinux2010_x86_64 /io/scripts/releases/$(basename $0)
