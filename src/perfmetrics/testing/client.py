@@ -92,7 +92,7 @@ class FakeStatsDClient(StatsdClient):
 
         .. seealso:: `iter_observations`
         """
-        return [m for m in self]
+        return list(self)
 
     @property
     def packets(self):
@@ -101,4 +101,4 @@ class FakeStatsDClient(StatsdClient):
 
         .. seealso:: `iter_packets`
         """
-        return [p for p in self.iter_packets()]
+        return list(self.iter_packets())

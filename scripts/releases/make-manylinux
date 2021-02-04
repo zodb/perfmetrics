@@ -6,6 +6,15 @@ set -e
 export PYTHONUNBUFFERED=1
 export PYTHONDONTWRITEBYTECODE=1
 
+# Don't get warnings about Python 2 support being deprecated. We
+# know. The env var works for pip 20.
+export PIP_NO_PYTHON_VERSION_WARNING=1
+export PIP_NO_WARN_SCRIPT_LOCATION=1
+
+# Build configuration.
+export CFLAGS="-pipe -Ofast"
+export CXXFLAGS="-pipe -Ofast"
+
 if [ -d /io -a -d /opt/python ]; then
     # Running inside docker
     cd /io
@@ -18,7 +27,7 @@ if [ -d /io -a -d /opt/python ]; then
         git clone /io io
         cd io
         $variant/bin/pip install -U pip
-        $variant/bin/pip install -U cython setuptools
+        $variant/bin/pip install -U 'cython>=3.0a6' setuptools
         PATH=$variant/bin:$PATH $variant/bin/python setup.py bdist_wheel
         auditwheel show dist/*.whl
         auditwheel repair dist/*.whl
@@ -30,4 +39,5 @@ if [ -d /io -a -d /opt/python ]; then
     exit 0
 fi
 
-docker run --rm -ti -v "$(pwd):/io" quay.io/pypa/manylinux2010_x86_64 /io/scripts/releases/$(basename $0)
+docker run --rm -e GITHUB_ACTIONS -e DOCKER_IMAGE -v "$(pwd):/io" ${DOCKER_IMAGE:-quay.io/pypa/manylinux2010_x86_64} /io/scripts/releases/$(basename $0)
+ls -l wheelhouse

@@ -17,7 +17,7 @@ CHANGES = read('CHANGES.rst')
 tests_require = [
     'zope.testrunner',
     'nti.testing',
-    'pyhamcrest',
+    'pyhamcrest < 1.10',
     'pyperf',
 ]
 
@@ -118,7 +118,7 @@ if not PYPY:
 
 setup(
     name='perfmetrics',
-    version='3.0.1.dev0',
+    version='3.1.0.dev0',
     author='Shane Hathaway',
     author_email='shane@hathawaymix.org',
     description='Send performance metrics about Python code to Statsd',
@@ -136,6 +136,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: Repoze Public License",

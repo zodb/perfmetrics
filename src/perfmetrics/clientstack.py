@@ -25,7 +25,7 @@ class ClientStack(threading.local):
     default = None
 
     def __init__(self):
-        threading.local.__init__(self)
+        threading.local.__init__(self) # pylint:disable=non-parent-init-called
         self.stack = []
 
     def get(self):

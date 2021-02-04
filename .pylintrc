@@ -51,7 +51,9 @@ disable=
     inconsistent-return-statements,
     useless-object-inheritance,
     chained-comparison,
-    too-many-ancestors
+    too-many-ancestors,
+    super-with-arguments,
+    import-outside-toplevel
 #   undefined-all-variable
 
 
