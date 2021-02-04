@@ -135,6 +135,17 @@ class StatsdClient(object):
         """
         self.incr(stat, -count, rate=rate, buf=buf, rate_applied=rate_applied)
 
+    def set_add(self, stat, value, rate=1, buf=None, rate_applied=False):
+        """
+        See :meth:`perfmetrics.interfaces.IStatsdClient.set_add`.
+        """
+        if rate >= 1 or rate_applied or self.random() < rate:
+            s = '%s%s:%s|s' % (self.prefix, stat, value)
+            if buf is None:
+                self._send(s)
+            else:
+                buf.append(s)
+
     def _send(self, data):
         """Send a UDP packet containing a string."""
         try:
@@ -148,6 +159,7 @@ class StatsdClient(object):
         """
         if buf:
             self._send('\n'.join(buf))
+
 
 @implementer(IStatsdClient)
 class StatsdClientMod(object):
@@ -194,27 +206,34 @@ class StatsdClientMod(object):
     def decr(self, stat, *args, **kw):
         self._wrapped.decr(self.format % stat, *args, **kw)
 
+    def set_add(self, stat, *args, **kw):
+        self._wrapped.set_add(self.format % stat, *args, **kw)
+
     def sendbuf(self, buf):
         self._wrapped.sendbuf(buf)
+
 
 @implementer(IStatsdClient)
 class NullStatsdClient(object):
     """No-op statsd client."""
 
     def close(self):
-        """Does nothing"""
+        """Does nothing."""
 
     def timing(self, stat, *args, **kw):
-        """Does nothing"""
+        """Does nothing."""
 
     def gauge(self, stat, *args, **kw):
-        """Does nothing"""
+        """Does nothing."""
 
     def incr(self, stat, *args, **kw):
-        """Does nothing"""
+        """Does nothing."""
 
     def decr(self, stat, *args, **kw):
-        """Does nothing"""
+        """Does nothing."""
+
+    def set_add(self, stat, value, *args, **kw):
+        """Does nothing."""
 
     def sendbuf(self, buf):
         """Does nothing"""

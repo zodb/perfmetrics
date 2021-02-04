@@ -12,6 +12,9 @@
 - The ``FakeStatsDClient`` for testing is now always true whether or
   not any observations have been seen, like the normal clients. See
   `issue <https://github.com/zodb/perfmetrics/issues/23>`_.
+- Add support for `StatsD sets
+  <https://github.com/statsd/statsd/blob/master/docs/metric_types.md#sets>`_,
+  counters of unique events.
 
 3.0.0 (2019-09-03)
 ==================

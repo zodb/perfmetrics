@@ -20,6 +20,8 @@ from hamcrest import has_property
 
 from nti.testing.matchers import is_true
 
+from ...tests.test_statsd import TestBasics
+
 from .. import FakeStatsDClient as MockStatsDClient
 
 from ..observation import OBSERVATION_KIND_COUNTER as METRIC_COUNTER_KIND
@@ -27,10 +29,12 @@ from ..observation import OBSERVATION_KIND_GAUGE as METRIC_GAUGE_KIND
 from ..observation import OBSERVATION_KIND_SET as METRIC_SET_KIND
 from ..observation import OBSERVATION_KIND_TIMER as METRIC_TIMER_KIND
 
-class TestMockStatsDClient(unittest.TestCase):
+class TestMockStatsDClient(TestBasics):
+
+    _class = MockStatsDClient
 
     def setUp(self):
-        self.client = MockStatsDClient()
+        self.client = self._makeOne()
 
     def test_true_initially(self):
         assert_that(self.client, is_true())
@@ -39,10 +43,11 @@ class TestMockStatsDClient(unittest.TestCase):
         self.client.incr('mycounter')
         self.client.gauge('mygauge', 5)
         self.client.timing('mytimer', 3003)
+        self.client.set_add('myset', 42)
 
-        assert_that(self.client, has_length(3))
+        assert_that(self.client, has_length(4))
 
-        counter, gauge, timer = self.client.observations
+        counter, gauge, timer, Set = self.client.observations
 
         assert_that(counter, has_properties('name', 'mycounter',
                                             'value', '1',
@@ -56,6 +61,12 @@ class TestMockStatsDClient(unittest.TestCase):
             'name', 'mytimer',
             'value', '3003',
             'kind', METRIC_TIMER_KIND
+        ))
+
+        assert_that(Set, has_properties(
+            'name', 'myset',
+            'value', '42',
+            'kind', METRIC_SET_KIND
         ))
 
     def test_clear(self):

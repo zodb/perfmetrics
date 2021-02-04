@@ -23,6 +23,8 @@ class _TrackingSocket(object):
         del self.sent_packets[:]
         del self.observations[:]
 
+    close = clear
+
     def sendto(self, data, addr):
         # The client encoded to bytes
         assert isinstance(data, bytes)
