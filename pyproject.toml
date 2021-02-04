@@ -12,6 +12,12 @@ requires = [
      # 0.28 is faster, and (important!) lets us specify the target module
      # name to be created so that we can have both foo.py and _foo.so
      # at the same time. 0.29 fixes some issues with Python 3.7,
-     # and adds the 3str mode for transition to Python 3.
-     "Cython >= 0.29.13; platform_python_implementation == 'CPython'",
+     # and adds the 3str mode for transition to Python 3. 0.29.14+ is
+     # required for Python 3.8. 3.0a2 introduced a change that prevented
+     # us from compiling (https://github.com/gevent/gevent/issues/1599)
+     # but once that was fixed, 3.0a4 led to all of our leak tests
+     # failing in Python 2 (https://travis-ci.org/github/gevent/gevent/jobs/683782800);
+     # This was fixed in 3.0a5 (https://github.com/cython/cython/issues/3578)
+     # 3.0a6 fixes an issue cythonizing source on 32-bit platforms
+     "Cython >= 3.0a6; platform_python_implementation == 'CPython'",
 ]

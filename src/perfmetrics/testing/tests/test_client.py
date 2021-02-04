@@ -80,6 +80,11 @@ def test_suite():
     while not os.path.exists(os.path.join(root, 'setup.py')):
         prev, root = root, os.path.dirname(root)
         if root == prev:
+            # We seem to be installed out of tree. Are we working in the
+            # right directory at least?
+            if os.path.exists('setup.py'): # pragma: no cover
+                root = os.path.dirname(os.path.abspath('setup.py'))
+                break
             # Let's avoid infinite loops at root
             raise AssertionError('could not find my setup.py')
     docs = os.path.join(root, 'docs')

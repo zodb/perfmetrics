@@ -5,7 +5,8 @@
 3.1.0 (unreleased)
 ==================
 
-- Add support for Python 3.8.
+- Add support for Python 3.8 and 3.9.
+- Move to GitHub Actions from Travis CI.
 
 
 3.0.0 (2019-09-03)

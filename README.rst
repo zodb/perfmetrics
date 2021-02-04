@@ -23,9 +23,9 @@ Complete documentation is hosted at https://perfmetrics.readthedocs.io
    :target: https://pypi.org/project/perfmetrics/
    :alt: Supported Python versions
 
-.. image:: https://travis-ci.org/zodb/perfmetrics.svg?branch=master
-   :target: https://travis-ci.org/zodb/perfmetrics
-   :alt: Travis CI Build Status
+.. image:: https://github.com/zodb/perfmetrics/workflows/tests/badge.svg
+   :target: https://github.com/zodb/perfmetrics/actions?query=workflow%3Atests
+   :alt: CI Build Status
 
 .. image:: https://coveralls.io/repos/github/zodb/perfmetrics/badge.svg
    :target: https://coveralls.io/github/zodb/perfmetrics
