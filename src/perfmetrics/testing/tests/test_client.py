@@ -18,6 +18,7 @@ from hamcrest import has_length
 from hamcrest import has_properties
 from hamcrest import has_property
 
+from nti.testing.matchers import is_true
 
 from .. import FakeStatsDClient as MockStatsDClient
 
@@ -30,6 +31,9 @@ class TestMockStatsDClient(unittest.TestCase):
 
     def setUp(self):
         self.client = MockStatsDClient()
+
+    def test_true_initially(self):
+        assert_that(self.client, is_true())
 
     def test_tracks_metrics(self):
         self.client.incr('mycounter')
@@ -57,10 +61,11 @@ class TestMockStatsDClient(unittest.TestCase):
     def test_clear(self):
         self.client.incr('mycounter')
         assert_that(self.client, has_length(1))
+        assert_that(self.client, is_true())
 
         self.client.clear()
         assert_that(self.client, has_length(0))
-
+        assert_that(self.client, is_true())
 
     def test_tracks_multimetrics(self):
         packet = 'gorets:1|c\nglork:320|ms\ngaugor:333|g\nuniques:765|s'

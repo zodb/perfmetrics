@@ -40,6 +40,10 @@ class FakeStatsDClient(StatsdClient):
     rather than pushing them over a socket. This class is a drop
     in replacement for `perfmetrics.statsd.StatsdClient` that collects statsd
     packets and `~.Observation` that are sent through the client.
+
+    .. versionchanged:: 3.1.0
+       Like the normal clients, this object is now always true, whether or
+       not any observations have been sent.
     """
 
     def __init__(self, prefix=''):
@@ -58,12 +62,15 @@ class FakeStatsDClient(StatsdClient):
         """
         self.udp_sock.clear()
 
+    def __bool__(self):
+        return True
+
+    __nonzero__ = __bool__ # Python 2
+
     def __len__(self):
         """
         The number of metrics sent. This accounts for multi metric packets
         that may be sent.
-
-        Note that this object will be false if no metrics have been sent.
         """
         return len(self.udp_sock.observations)
 
