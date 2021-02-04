@@ -17,7 +17,7 @@ CHANGES = read('CHANGES.rst')
 tests_require = [
     'zope.testrunner',
     'nti.testing',
-    'pyhamcrest < 1.10',
+    'pyhamcrest >= 1.10',
     'pyperf',
 ]
 
