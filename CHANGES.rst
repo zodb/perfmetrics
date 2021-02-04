@@ -14,7 +14,7 @@
   `issue <https://github.com/zodb/perfmetrics/issues/23>`_.
 - Add support for `StatsD sets
   <https://github.com/statsd/statsd/blob/master/docs/metric_types.md#sets>`_,
-  counters of unique events.
+  counters of unique events. See `PR 30 <https://github.com/zodb/perfmetrics/pull/30>`_.
 
 3.0.0 (2019-09-03)
 ==================
