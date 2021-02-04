@@ -60,7 +60,7 @@ class IStatsdClient(Interface):
         """
         Log timing information in milliseconds.
 
-        ``stat`` is the name of the metric to record and ``value`` is
+        *stat* is the name of the metric to record and *value* is
         the timing measurement in milliseconds. Note that Statsd
         maintains several data points for each timing metric, so
         timing metrics can take more disk space than counters or
@@ -71,7 +71,7 @@ class IStatsdClient(Interface):
         """
         Update a gauge value.
 
-        ``stat`` is the name of the metric to record and ``value`` is
+        *stat* is the name of the metric to record and *value* is
         the new gauge value. A gauge represents a persistent value
         such as a pool size. Because gauges from different machines
         often conflict, a suffix is usually applied to gauge names;
@@ -80,7 +80,7 @@ class IStatsdClient(Interface):
 
     def incr(stat, count=1, rate=1, buf=None, rate_applied=False):
         """
-        Increment a counter by ``count``.
+        Increment a counter by *count*.
 
         Note that Statsd clears all counter values every time it sends
         the metrics to Graphite, which usually happens every 10
@@ -88,14 +88,33 @@ class IStatsdClient(Interface):
         appropriate to use a gauge instead of a counter.
         """
 
-
     def decr(stat, count=1, rate=1, buf=None, rate_applied=False):
         """
         Decrement a counter.
 
+        This is the opposite of :meth:`incr`.
+        """
 
-            >>> client = StatsdClient()
-            >>> client.decr('some.int')
+    def set_add(stat, value, rate=1, buf=None, rate_applied=False):
+        """
+        Add a *value* to the set named by *stat*.
+
+        A StatsD set counts the unique occurrences of events (values)
+        between flushes.
+
+        For example, if you wanted to count the number of different
+        users logging in to an application within the sampling period,
+        you could use something like::
+
+            def on_login(user_id):
+                client.set_add("logged_in_users", user_id)
+
+        While this method accepts the *rate* parameter, it may be less
+        useful here since the point is to let the StatsD server collect
+        unique events automatically, and it can't do that if some events
+        are dropped, making it only an estimate.
+
+        .. versionadded:: 3.1.0
         """
 
 

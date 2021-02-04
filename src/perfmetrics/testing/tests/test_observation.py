@@ -67,7 +67,6 @@ class TestMetricParsing(unittest.TestCase):
 
         assert_that(metric, is_timer('glork', '320'))
 
-
     def test_set(self):
         packet = 'glork:3|s'
         metric = Metric.make_all(packet)
