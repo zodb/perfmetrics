@@ -9,6 +9,9 @@
 - Move to GitHub Actions from Travis CI.
 - Support PyHamcrest 1.10 and later. See `issue 26
   <https://github.com/zodb/perfmetrics/issues/26>`_.
+- The ``FakeStatsDClient`` for testing is now always true whether or
+  not any observations have been seen, like the normal clients. See
+  `issue <https://github.com/zodb/perfmetrics/issues/23>`_.
 
 3.0.0 (2019-09-03)
 ==================
@@ -35,7 +38,7 @@
   https://github.com/zodb/perfmetrics/issues/11.
 
 - Include support for testing applications instrumented with
-  perfmetrics in ``perfmetrics.testing``. This was previously release
+  perfmetrics in ``perfmetrics.testing``. This was previously released
   externally as ``nti.fakestatsd``. See https://github.com/zodb/perfmetrics/issues/9.
 
 - Read the ``PERFMETRICS_DISABLE_DECORATOR`` environment variable when

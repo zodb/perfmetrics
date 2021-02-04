@@ -7,6 +7,7 @@ import unittest
 
 from hamcrest import assert_that
 from nti.testing.matchers import validly_provides
+from nti.testing.matchers import is_true
 
 from perfmetrics.interfaces import IStatsdClient
 
@@ -41,6 +42,9 @@ class TestBasics(unittest.TestCase):
 
     def test_implements(self):
         assert_that(self._makeOne(), validly_provides(IStatsdClient))
+
+    def test_true(self):
+        assert_that(self._makeOne(), is_true())
 
 class TestNullStatsdClient(TestBasics):
 
