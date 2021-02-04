@@ -7,7 +7,8 @@
 
 - Add support for Python 3.8 and 3.9.
 - Move to GitHub Actions from Travis CI.
-
+- Support PyHamcrest 1.10 and later. See `issue 26
+  <https://github.com/zodb/perfmetrics/issues/26>`_.
 
 3.0.0 (2019-09-03)
 ==================

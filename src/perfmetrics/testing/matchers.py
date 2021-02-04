@@ -13,6 +13,7 @@ from hamcrest import is_
 from hamcrest import has_properties
 from hamcrest import none
 
+
 from .observation import OBSERVATION_KIND_COUNTER as METRIC_COUNTER_KIND
 from .observation import OBSERVATION_KIND_GAUGE as METRIC_GAUGE_KIND
 from .observation import OBSERVATION_KIND_SET as METRIC_SET_KIND
@@ -37,7 +38,11 @@ _metric_kind_display_name = {
     's': 'set'
 }
 
+
 class IsMetric(BaseMatcher):
+
+    # See _matches()
+    _force_one_description = False
 
     def __init__(self, kwargs):
         matchers = {}
@@ -52,13 +57,39 @@ class IsMetric(BaseMatcher):
                 value = str(value)
             matchers[key] = value
 
+        # Beginning in 1.10 and up through at least 2.0.2,
+        # has_properties con no longer be called with an empty dictionary
+        # without creating a KeyError from popitem().
         self._matcher = all_of(
             instance_of(Observation),
-            has_properties(**matchers)
+            has_properties(**matchers) if matchers else instance_of(Observation),
         )
+        if self._force_one_description:
+            self.__patch_matcher()
+
+    def __patch_matcher(self):
+        # This is tightly coupled to the structure of the matcher we create.
+        self._matcher.describe_all_mismatches = False
+        has_prop_matcher = self._matcher.matchers[1]
+        if hasattr(has_prop_matcher, 'matcher'):
+            has_prop_matcher.matcher.describe_all_mismatches = False
 
     def _matches(self, item):
-        return self._matcher.matches(item)
+        # On PyHamcrest == 1.10.x (last release for Python 2)
+        # There's a bug such that you can't call AllOf.matches without
+        # passing in a description without getting
+        # ``AttributeError: None has no append_text``
+        # So we pass one, even though it gets thrown away.
+        # XXX: Remove this workaround when we only support PyHamcrest 2.
+        # See https://github.com/hamcrest/PyHamcrest/issues/130
+        try:
+            return self._matcher.matches(item)
+        except AttributeError as ex:
+            if 'append_text' not in str(ex): # pragma: no cover
+                raise
+            IsMetric._force_one_description = True
+            self.__patch_matcher()
+            return self._matcher.matches(item)
 
     def describe_to(self, description):
         self._matcher.describe_to(description)

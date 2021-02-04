@@ -70,19 +70,29 @@ class TestIsMetric(unittest.TestCase):
         matcher = is_counter('foo', '1', 0.1)
         matcher.describe_to(desc)
         desc = str(desc)
+        # Strip internal newlines, which vary between
+        # hamcrest versions. Also, the exact text varies too;
+        # beginning with 1.10, the has_properties matcher we use internally is
+        # less verbose by default and so we get a string like:
+        #   an object with properties kind matching c and name matching foo
+        # where before it was something like
+        #  an object with property kind matching c
+        #  and an object with property name matching foo
+
+        desc = desc.replace('\n', '')
         assert_that(
             desc,
             all_of(
                 contains_string(
                     "(an instance of Observation and "),
                 contains_string(
-                    "an object with a property 'kind' matching 'c'"),
+                    "'kind' matching 'c'"),
                 contains_string(
-                    "an object with a property 'name' matching 'foo'"),
+                    "'name' matching 'foo'"),
                 contains_string(
-                    "an object with a property 'value' matching '1'"),
+                    "'value' matching '1'"),
                 contains_string(
-                    "an object with a property 'sampling_rate' matching <0.1>"
+                    "'sampling_rate' matching <0.1>"
                 )
             )
         )
