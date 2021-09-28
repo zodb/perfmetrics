@@ -17,12 +17,12 @@ cdef class _MethodLikeMixin(object):
     pass
 
 cdef class _AbstractMetricImpl(_MethodLikeMixin):
-    cpdef public bint metric_timing
-    cpdef public bint metric_count
-    cpdef public double metric_rate
+    cdef public bint metric_timing
+    cdef public bint metric_count
+    cdef public double metric_rate
     cdef  f
     cdef str timing_format
-    cpdef public __wrapped__
+    cdef public __wrapped__
     cdef dict __dict__
 
     cdef str _compute_stat(self, tuple args)
@@ -37,12 +37,12 @@ cdef class _MethodMetricImpl(_AbstractMetricImpl):
 
 
 cdef class Metric(object):
-    cpdef public double rate
-    cdef  double start
-    cpdef public bint method
-    cpdef public bint count
-    cpdef public bint timing
-    cpdef public str stat
-    cpdef public str timing_format
+    cdef public double rate
+    cdef double start
+    cdef public bint method
+    cdef public bint count
+    cdef public bint timing
+    cdef public str stat
+    cdef public str timing_format
     cdef random
     cdef dict __dict__

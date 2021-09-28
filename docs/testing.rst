@@ -42,7 +42,7 @@ assertions:
 .. code-block:: pycon
 
   >>> from hamcrest import assert_that
-  >>> from hamcrest import contains
+  >>> from hamcrest import contains_exactly as contains
   >>> from perfmetrics.testing.matchers import is_observation
   >>> from perfmetrics.testing.matchers import is_gauge
 

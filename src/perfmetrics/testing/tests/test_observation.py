@@ -11,7 +11,7 @@ import unittest
 
 from hamcrest import none
 from hamcrest import assert_that
-from hamcrest import contains
+from hamcrest import contains_exactly as contains
 from hamcrest import is_
 from hamcrest import has_length
 from hamcrest import calling

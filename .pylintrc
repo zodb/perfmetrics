@@ -53,7 +53,8 @@ disable=
     chained-comparison,
     too-many-ancestors,
     super-with-arguments,
-    import-outside-toplevel
+    import-outside-toplevel,
+    consider-using-f-string
 #   undefined-all-variable
 
 

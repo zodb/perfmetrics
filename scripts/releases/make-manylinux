@@ -27,7 +27,7 @@ if [ -d /io -a -d /opt/python ]; then
         git clone /io io
         cd io
         $variant/bin/pip install -U pip
-        $variant/bin/pip install -U 'cython>=3.0a6' setuptools
+        $variant/bin/pip install -U 'cython>=3.0a9' setuptools
         PATH=$variant/bin:$PATH $variant/bin/python setup.py bdist_wheel
         auditwheel show dist/*.whl
         auditwheel repair dist/*.whl
