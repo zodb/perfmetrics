@@ -2,11 +2,14 @@
  CHANGES
 =========
 
-3.1.1 (unreleased)
+3.2.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Add support for Python 3.10.
 
+- Drop support for Python 3.5.
+
+- Add aarch64 binary wheels.
 
 3.1.0 (2021-02-04)
 ==================

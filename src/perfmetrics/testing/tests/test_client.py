@@ -12,13 +12,13 @@ import os
 import unittest
 
 from hamcrest import assert_that
-from hamcrest import contains
+from hamcrest import contains_exactly as contains
 
 from hamcrest import has_length
 from hamcrest import has_properties
 from hamcrest import has_property
 
-from nti.testing.matchers import is_true
+from ...tests import is_true
 
 from ...tests.test_statsd import TestBasics
 

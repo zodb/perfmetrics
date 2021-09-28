@@ -8,11 +8,13 @@ import unittest
 from zope.interface import verify
 
 from hamcrest import assert_that
-from nti.testing.matchers import validly_provides
-from nti.testing.matchers import is_true
-from nti.testing.matchers import implements
 
 from perfmetrics.interfaces import IStatsdClient
+
+from . import validly_provides
+from . import is_true
+from . import implements
+
 
 # pylint:disable=protected-access
 # pylint:disable=too-many-public-methods
@@ -24,7 +26,7 @@ class MockSocket(object):
 
     def sendto(self, data, addr):
         if self.error is not None:
-            raise self.error
+            raise self.error # pylint:disable=raising-bad-type
         self.sent.append((data, addr))
 
     def close(self):

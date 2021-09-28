@@ -84,15 +84,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [2.7, pypy-2.7, pypy-3.6, 3.6, 3.7, 3.8, 3.9]
+        python-version: [2.7, pypy-2.7, pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10.0-rc.2']
         os: [ubuntu-20.04, macos-latest]
         exclude:
           - os: macos-latest
             python-version: pypy-2.7
           - os: macos-latest
-            python-version: pypy-3.6
-          - os: macos-latest
-            python-version: 3.5
+            python-version: pypy-3.7
           - os: macos-latest
             python-version: 3.6
 
@@ -126,7 +124,7 @@ jobs:
         run: |
           pip install -U pip
           pip install -U setuptools wheel twine
-          pip install -U 'cython>=3.0a6'
+          pip install -U 'cython>=3.0a9'
 
       - name: Build perfmetrics
         run: |
@@ -163,15 +161,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [2.7, pypy-2.7, pypy-3.6, 3.6, 3.7, 3.8, 3.9]
+        python-version: [2.7, pypy-2.7, pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10.0-rc.2']
         os: [ubuntu-20.04, macos-latest]
         exclude:
           - os: macos-latest
             python-version: pypy-2.7
           - os: macos-latest
-            python-version: pypy-3.6
-          - os: macos-latest
-            python-version: 3.5
+            python-version: pypy-3.7
           - os: macos-latest
             python-version: 3.6
 
@@ -279,12 +275,13 @@ jobs:
           pip install -U pylint
           python -m pylint --limit-inference-results=1 --rcfile=.pylintrc perfmetrics -f parseable -r n
 
-  manylinux_x86_64:
+  manylinux:
     runs-on: ubuntu-20.04
     # We use a regular Python matrix entry to share as much code as possible.
     strategy:
       matrix:
         python-version: [3.9]
+        image: [manylinux2010_x86_64, manylinux2014_aarch64]
 
     steps:
       - name: checkout
@@ -308,14 +305,24 @@ jobs:
 
       - name: Update pip
         run: pip install -U pip
-      - name: Build perfmetrics
+      - name: Build perfmetrics (x86_64)
+        if: matrix.image == 'manylinux2010_x86_64'
         # An alternate way to do this is to run the container directly with a uses:
         # and then the script runs inside it. That may work better with caching.
         # See https://github.com/pyca/bcrypt/blob/f6b5ee2eda76d077c531362ac65e16f045cf1f29/.github/workflows/wheel-builder.yml
-        # The 2010 image is the last one that comes with Python 2.7.
+        # The 2010 image is the last one that comes with Python 2.7,
+        # and only up through the tag 2021-02-06-3d322a5
         env:
-          DOCKER_IMAGE: quay.io/pypa/manylinux2010_x86_64
+          DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}:2021-02-06-3d322a5
         run: scripts/releases/make-manylinux
+      - name: Build perfmetrics (aarch64)
+        if: matrix.image == 'manylinux2014_aarch64'
+        env:
+          DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}
+        run: |
+          # First we must enable emulation
+          docker run --rm --privileged hypriot/qemu-register
+          scripts/releases/make-manylinux
       - name: Upload perfmetrics wheels
         uses: actions/upload-artifact@v2
         with:
