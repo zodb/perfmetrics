@@ -2,7 +2,7 @@
  CHANGES
 =========
 
-3.2.0.post0 (unreleased)
+3.2.0.post0 (2021-09-28)
 ========================
 
 - Add Windows wheels for 3.9 and 3.10.
