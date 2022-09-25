@@ -124,7 +124,7 @@ if not PYPY:
 
 setup(
     name='perfmetrics',
-    version='3.3.0',
+    version='3.3.1.dev0',
     author='Shane Hathaway',
     author_email='shane@hathawaymix.org',
     maintainer='Jason Madden',
