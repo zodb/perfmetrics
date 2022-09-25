@@ -2,7 +2,7 @@
  CHANGES
 =========
 
-3.3.0 (unreleased)
+3.3.0 (2022-09-25)
 ==================
 
 - Stop accidentally building manylinux wheels with unsafe math
