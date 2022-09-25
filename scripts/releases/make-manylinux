@@ -12,8 +12,8 @@ export PIP_NO_PYTHON_VERSION_WARNING=1
 export PIP_NO_WARN_SCRIPT_LOCATION=1
 
 # Build configuration.
-export CFLAGS="-pipe -Ofast"
-export CXXFLAGS="-pipe -Ofast"
+export CFLAGS="-pipe -O3"
+export CXXFLAGS="-pipe -O3"
 
 if [ -d /io -a -d /opt/python ]; then
     # Running inside docker

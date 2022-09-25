@@ -37,7 +37,6 @@ disable=
     missing-docstring,
     ungrouped-imports,
     protected-access,
-    no-self-use,
     too-few-public-methods,
     exec-used,
     global-statement,

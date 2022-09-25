@@ -2,10 +2,16 @@
  CHANGES
 =========
 
-3.2.1 (unreleased)
+3.3.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Stop accidentally building manylinux wheels with unsafe math
+  optimizations.
+- Add support for Python 3.11.
+
+NOTE: This will be the last major release to support legacy versions
+of Python such as 2.7 and 3.6. Some such legacy versions may not have
+binary wheels published for this release.
 
 
 3.2.0.post0 (2021-09-28)

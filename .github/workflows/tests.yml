@@ -62,8 +62,8 @@ env:
   # Disable some warnings produced by libev especially and also some Cython generated code.
   # These are shared between GCC and clang so it must be a minimal set.
   # TODO: Figure out how to set env vars per platform without resorting to inline scripting.
-  CFLAGS: -Ofast -pipe
-  CXXFLAGS: -Ofast -pipe
+  CFLAGS: -O3 -pipe
+  CXXFLAGS: -O3 -pipe
   # Uploading built wheels for releases.
   # TWINE_PASSWORD is encrypted and stored directly in the
   # travis repo settings.
@@ -84,7 +84,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [2.7, pypy-2.7, pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10.0-rc.2']
+        python-version: [2.7, pypy-2.7, pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10', '3.11.0-rc.2']
         os: [ubuntu-20.04, macos-latest]
         exclude:
           - os: macos-latest
@@ -161,7 +161,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [2.7, pypy-2.7, pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10.0-rc.2']
+        python-version: [2.7, pypy-2.7, pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10', '3.11.0-rc.2']
         os: [ubuntu-20.04, macos-latest]
         exclude:
           - os: macos-latest
@@ -310,10 +310,8 @@ jobs:
         # An alternate way to do this is to run the container directly with a uses:
         # and then the script runs inside it. That may work better with caching.
         # See https://github.com/pyca/bcrypt/blob/f6b5ee2eda76d077c531362ac65e16f045cf1f29/.github/workflows/wheel-builder.yml
-        # The 2010 image is the last one that comes with Python 2.7,
-        # and only up through the tag 2021-02-06-3d322a5
         env:
-          DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}:2021-02-06-3d322a5
+          DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}
         run: scripts/releases/make-manylinux
       - name: Build perfmetrics (aarch64)
         if: matrix.image == 'manylinux2014_aarch64'
