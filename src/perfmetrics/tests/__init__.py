@@ -76,10 +76,9 @@ except ImportError: # pragma: no cover
         def _matches(self, item):
             try:
                 verifyObject(self.iface, item)
+                return True
             except Invalid:
                 return False
-            else:
-                return True
 
         def describe_to(self, description):
             description.append_text('object verifiably providing ').append_description_of(
