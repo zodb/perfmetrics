@@ -77,10 +77,7 @@ env:
 
 
 jobs:
-
-  build-perfmetrics:
-    # Sigh. Note that the matrix must be kept in sync
-    # with `test`
+  test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -89,10 +86,10 @@ jobs:
         exclude:
           - os: macos-latest
             python-version: pypy-3.9
-
     steps:
       - name: checkout
         uses: actions/checkout@v3
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -105,27 +102,51 @@ jobs:
           pip install -U pip
           pip install -U setuptools wheel twine
           pip install -U 'cython>=3.0b3'
-
-      - name: Build perfmetrics
-        run: |
-          # Next, build the wheel *in place*. This helps ccache, and also lets us cache the configure
-          # output (pip install uses a random temporary directory, making this difficult).
-          python setup.py build_ext -i
-          python setup.py bdist_wheel
-          # Also install it, so that we get dependencies in the (pip) cache.
           pip install -U coverage
-          pip install -U 'faulthandler; python_version == "2.7" and platform_python_implementation == "CPython"'
-          pip install .[test]
+
+      - name: Install perfmetrics (non-Mac)
+        if: ${{ ! startsWith(runner.os, 'Mac') }}
+        run: |
+          python setup.py bdist_wheel
+          python -m pip install -U -e ".[test,docs]"
+        env:
+          # Ensure we test with assertions enabled.
+          # As opposed to the manylinux builds, which we distribute and
+          # thus only use O3 (because Ofast enables fast-math, which has
+          # process-wide effects), we test with Ofast here, because we
+          # expect that some people will compile it themselves with that setting.
+          CPPFLAGS: "-Ofast -UNDEBUG"
+
+      - name: Install perfmetrics (Mac)
+        if: startsWith(runner.os, 'Mac')
+        run: |
+          python setup.py bdist_wheel
+          python -m pip install -U -e ".[test,docs]"
+        env:
+          # Unlike the above, we are actually distributing these
+          # wheels, so they need to be built for production use.
+          CPPFLAGS: "-O3"
+          # Build for both architectures
+          ARCHFLAGS: "-arch x86_64 -arch arm64"
 
       - name: Check perfmetrics build
         run: |
           ls -l dist
           twine check dist/*
+
       - name: Upload perfmetrics wheel
         uses: actions/upload-artifact@v2
         with:
           name: perfmetrics-${{ runner.os }}-${{ matrix.python-version }}.whl
           path: dist/*whl
+
+      - name: Run tests and report coverage
+        run: |
+          coverage run -p -m zope.testrunner --path=src --package perfmetrics -v --color
+          PURE_PYTHON=1 coverage run -p -m zope.testrunner --path=src --package perfmetrics -v --color
+          coverage combine
+          coverage report -i
+
       - name: Publish package to PyPI (mac)
         # We cannot 'uses: pypa/gh-action-pypi-publish@v1.4.1' because
         # that's apparently a container action, and those don't run on
@@ -136,77 +157,7 @@ jobs:
         run: |
           twine upload --skip-existing dist/*
 
-  test:
-    needs: build-perfmetrics
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python-version: [pypy-3.9, 3.7, 3.8, 3.9, '3.10', '3.11', "3.12-dev"]
-        os: [ubuntu-latest, macos-latest]
-        exclude:
-          - os: macos-latest
-            python-version: pypy-3.9
-
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: setup.py
-
-      - name: Download perfmetrics wheel
-        uses: actions/download-artifact@v2
-        with:
-          name: perfmetrics-${{ runner.os }}-${{ matrix.python-version }}.whl
-          path: dist/
-      - name: Install perfmetrics
-        # I'd prefer to install the wheel in non-editable mode, but that seems to
-        # screw up coverage reporting.
-        run: |
-          pip install -U wheel
-          pip install -U coverage
-          pip install -U  "`ls dist/perfmetrics-*.whl`[test]"
-          # Also unzip into src/ so that zope.testrunner can find the .so files
-          # when we ask it to load tests from that directory.
-          unzip -n dist/perfmetrics-*whl -d src
-      - name: Run tests and report coverage
-        run: |
-          coverage run -p -m zope.testrunner --path=src --package perfmetrics -v --color
-          PURE_PYTHON=1 coverage run -p -m zope.testrunner --path=src --package perfmetrics -v --color
-          coverage combine
-          coverage report -i
-
-  lint:
-    needs: build-perfmetrics
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python-version: [3.11]
-        os: [ubuntu-latest]
-
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: setup.py
-      - name: Download perfmetrics wheel
-        uses: actions/download-artifact@v2
-        with:
-          name: perfmetrics-${{ runner.os }}-${{ matrix.python-version }}.whl
-          path: dist/
-      - name: Install perfmetrics
-        run: |
-          pip install -U pip
-          pip install -U wheel
-          pip install -U `ls dist/perfmetrics-*`[test]
-      - name: Lint
+      - name: lint
         run: |
           pip install -U pylint
           python -m pylint --limit-inference-results=1 --rcfile=.pylintrc perfmetrics -f parseable -r n
@@ -255,16 +206,3 @@ jobs:
           password: ${{ secrets.TWINE_PASSWORD }}
           skip_existing: true
           packages_dir: wheelhouse/
-
-# TODO:
-# * Use YAML syntax to share snippets, like the old .travis.yml did
-# Sadly, as of 2021-02-01, Github Actions does not support anchors at
-# all. Just having an anchor results in an error:
-#
-#   The workflow is not valid. .github/workflows/tests.yml: Anchors
-#   are not currently supported. Remove the anchor 'an-strategy'
-#
-# The alternative of using composite actions doesn't work either,
-# because composite actions are limited to running shell scripts.
-# Steps in them can't call other actions with `uses:`, and nor can
-# they be conditional with `if:`.

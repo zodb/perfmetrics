@@ -12,22 +12,22 @@ export PIP_NO_PYTHON_VERSION_WARNING=1
 export PIP_NO_WARN_SCRIPT_LOCATION=1
 
 # Build configuration.
-export CFLAGS="-pipe -O3"
-export CXXFLAGS="-pipe -O3"
+export CFLAGS="-pipe -O3 -DNDEBUG"
+export CXXFLAGS="-pipe -O3 -DNDEBUG"
 
 if [ -d /io -a -d /opt/python ]; then
     # Running inside docker
     cd /io
     rm -rf wheelhouse
     mkdir wheelhouse
-    for variant in `ls -d /opt/python/cp*`; do
+    for variant in `ls -d /opt/python/cp{37,38,39,310,311,312}*`; do
         echo "Building $variant"
         mkdir /tmp/build
         cd /tmp/build
         git clone /io io
         cd io
         $variant/bin/pip install -U pip
-        $variant/bin/pip install -U 'cython>=3.0a9' setuptools
+        $variant/bin/pip install -U 'cython>=3.0b3' setuptools
         PATH=$variant/bin:$PATH $variant/bin/python setup.py bdist_wheel
         auditwheel show dist/*.whl
         auditwheel repair dist/*.whl
