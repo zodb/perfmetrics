@@ -2,7 +2,7 @@
  CHANGES
 =========
 
-4.0.0 (unreleased)
+4.0.0 (2023-06-22)
 ==================
 
 - Drop support for obsolete Python versions, including Python 2.7 and
