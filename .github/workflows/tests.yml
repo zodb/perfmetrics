@@ -158,6 +158,8 @@ jobs:
           twine upload --skip-existing dist/*
 
       - name: lint
+        if: matrix.python-version == '3.11' && startsWith(runner.os, 'Linux')
+        # At this writing, PyLint 2.17/astroid 2.15 won't work on 3.12
         run: |
           pip install -U pylint
           python -m pylint --limit-inference-results=1 --rcfile=.pylintrc perfmetrics -f parseable -r n
