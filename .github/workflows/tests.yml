@@ -77,75 +77,76 @@ env:
 
 
 jobs:
-
-  build-perfmetrics:
-    # Sigh. Note that the matrix must be kept in sync
-    # with `test`
+  test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [2.7, pypy-2.7, pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10', '3.11.0-rc.2']
-        os: [ubuntu-20.04, macos-latest]
+        python-version: [pypy-3.9, 3.7, 3.8, 3.9, '3.10', '3.11', "3.12-dev"]
+        os: [ubuntu-latest, macos-latest]
         exclude:
           - os: macos-latest
-            python-version: pypy-2.7
-          - os: macos-latest
-            python-version: pypy-3.7
-          - os: macos-latest
-            python-version: 3.6
-
+            python-version: pypy-3.9
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      ###
-      # Caching.
-      # This actually *restores* a cache and schedules a cleanup action
-      # to save the cache. So it must come before the thing we want to use
-      # the cache.
-      ###
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          cache: 'pip'
+          cache-dependency-path: setup.py
 
       - name: Install Build Dependencies
         run: |
           pip install -U pip
           pip install -U setuptools wheel twine
-          pip install -U 'cython>=3.0a9'
-
-      - name: Build perfmetrics
-        run: |
-          # Next, build the wheel *in place*. This helps ccache, and also lets us cache the configure
-          # output (pip install uses a random temporary directory, making this difficult).
-          python setup.py build_ext -i
-          python setup.py bdist_wheel
-          # Also install it, so that we get dependencies in the (pip) cache.
+          pip install -U 'cython>=3.0b3'
           pip install -U coverage
-          pip install -U 'faulthandler; python_version == "2.7" and platform_python_implementation == "CPython"'
-          pip install .[test]
+
+      - name: Install perfmetrics (non-Mac)
+        if: ${{ ! startsWith(runner.os, 'Mac') }}
+        run: |
+          python setup.py bdist_wheel
+          python -m pip install -U -e ".[test,docs]"
+        env:
+          # Ensure we test with assertions enabled.
+          # As opposed to the manylinux builds, which we distribute and
+          # thus only use O3 (because Ofast enables fast-math, which has
+          # process-wide effects), we test with Ofast here, because we
+          # expect that some people will compile it themselves with that setting.
+          CPPFLAGS: "-Ofast -UNDEBUG"
+
+      - name: Install perfmetrics (Mac)
+        if: startsWith(runner.os, 'Mac')
+        run: |
+          python setup.py bdist_wheel
+          python -m pip install -U -e ".[test,docs]"
+        env:
+          # Unlike the above, we are actually distributing these
+          # wheels, so they need to be built for production use.
+          CPPFLAGS: "-O3"
+          # Build for both architectures
+          ARCHFLAGS: "-arch x86_64 -arch arm64"
 
       - name: Check perfmetrics build
         run: |
           ls -l dist
           twine check dist/*
+
       - name: Upload perfmetrics wheel
         uses: actions/upload-artifact@v2
         with:
           name: perfmetrics-${{ runner.os }}-${{ matrix.python-version }}.whl
           path: dist/*whl
+
+      - name: Run tests and report coverage
+        run: |
+          coverage run -p -m zope.testrunner --path=src --package perfmetrics -v --color
+          PURE_PYTHON=1 coverage run -p -m zope.testrunner --path=src --package perfmetrics -v --color
+          coverage combine
+          coverage report -i
+
       - name: Publish package to PyPI (mac)
         # We cannot 'uses: pypa/gh-action-pypi-publish@v1.4.1' because
         # that's apparently a container action, and those don't run on
@@ -156,178 +157,48 @@ jobs:
         run: |
           twine upload --skip-existing dist/*
 
-  test:
-    needs: build-perfmetrics
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python-version: [2.7, pypy-2.7, pypy-3.7, 3.6, 3.7, 3.8, 3.9, '3.10', '3.11.0-rc.2']
-        os: [ubuntu-20.04, macos-latest]
-        exclude:
-          - os: macos-latest
-            python-version: pypy-2.7
-          - os: macos-latest
-            python-version: pypy-3.7
-          - os: macos-latest
-            python-version: 3.6
-
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Download perfmetrics wheel
-        uses: actions/download-artifact@v2
-        with:
-          name: perfmetrics-${{ runner.os }}-${{ matrix.python-version }}.whl
-          path: dist/
-      - name: Install perfmetrics
-        # I'd prefer to install the wheel in non-editable mode, but that seems to
-        # screw up coverage reporting.
-        run: |
-          pip install -U wheel
-          pip install -U coverage
-          pip install -U 'faulthandler; python_version == "2.7" and platform_python_implementation == "CPython"'
-          pip install -U  "`ls dist/perfmetrics-*.whl`[test]"
-          # Also unzip into src/ so that zope.testrunner can find the .so files
-          # when we ask it to load tests from that directory.
-          unzip -n dist/perfmetrics-*whl -d src
-      - name: Run tests and report coverage
-        run: |
-          coverage run -p -m zope.testrunner --path=src --package perfmetrics -v --color
-          PURE_PYTHON=1 coverage run -p -m zope.testrunner --path=src --package perfmetrics -v --color
-          coverage combine
-          coverage report -i
-      - name: Submit to Coveralls
-        # This is a container action, which only runs on Linux.
-        if: ${{ !startsWith(matrix.python-version, 'pypy') && startsWith(runner.os, 'Linux') }}
-        uses: AndreMiras/coveralls-python-action@develop
-        with:
-          parallel: true
-  coveralls_finish:
-    needs: test
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Coveralls Finished
-      uses: AndreMiras/coveralls-python-action@develop
-      with:
-        parallel-finished: true
-
-
-  lint:
-    needs: build-perfmetrics
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python-version: [3.9]
-        os: [ubuntu-20.04]
-
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Download perfmetrics wheel
-        uses: actions/download-artifact@v2
-        with:
-          name: perfmetrics-${{ runner.os }}-${{ matrix.python-version }}.whl
-          path: dist/
-      - name: Install perfmetrics
-        run: |
-          pip install -U pip
-          pip install -U wheel
-          pip install -U `ls dist/perfmetrics-*`[test]
-      - name: Lint
-        # We only need to do this on one version, and it should be Python 3, because
-        # pylint has stopped updating for Python 2.
+      - name: lint
+        if: matrix.python-version == '3.11' && startsWith(runner.os, 'Linux')
+        # At this writing, PyLint 2.17/astroid 2.15 won't work on 3.12
         run: |
           pip install -U pylint
           python -m pylint --limit-inference-results=1 --rcfile=.pylintrc perfmetrics -f parseable -r n
 
   manylinux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     # We use a regular Python matrix entry to share as much code as possible.
     strategy:
       matrix:
         python-version: [3.9]
-        image: [manylinux2010_x86_64, manylinux2014_aarch64]
-
+        image:
+          - manylinux2010_x86_64
+          - manylinux2014_aarch64
+          - manylinux2014_ppc64le
+          - manylinux2014_s390x
+          - manylinux2014_x86_64
+          - musllinux_1_1_x86_64
+          - musllinux_1_1_aarch64
+    name: ${{ matrix.image }}
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
         with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip_manylinux_x8664-${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Update pip
-        run: pip install -U pip
-      - name: Build perfmetrics (x86_64)
-        if: matrix.image == 'manylinux2010_x86_64'
-        # An alternate way to do this is to run the container directly with a uses:
-        # and then the script runs inside it. That may work better with caching.
-        # See https://github.com/pyca/bcrypt/blob/f6b5ee2eda76d077c531362ac65e16f045cf1f29/.github/workflows/wheel-builder.yml
+          platforms: all
+      - name: Build and test perfmetrics
         env:
           DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}
-        run: scripts/releases/make-manylinux
-      - name: Build perfmetrics (aarch64)
-        if: matrix.image == 'manylinux2014_aarch64'
-        env:
-          DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}
-        run: |
-          # First we must enable emulation
-          docker run --rm --privileged hypriot/qemu-register
-          scripts/releases/make-manylinux
-      - name: Upload perfmetrics wheels
-        uses: actions/upload-artifact@v2
+        run: bash ./scripts/releases/make-manylinux
+      - name: Store perfmetrics wheels
+        uses: actions/upload-artifact@v3
         with:
           path: wheelhouse/*whl
-          name: manylinux_x86_64_wheels.zip
-      - name: Restore pip cache permissions
-        run: sudo chown -R $(whoami) ${{ steps.pip-cache.outputs.dir }}
+          name: ${{ matrix.image }}_wheels.zip
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@v1.4.1
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -336,16 +207,3 @@ jobs:
           password: ${{ secrets.TWINE_PASSWORD }}
           skip_existing: true
           packages_dir: wheelhouse/
-
-# TODO:
-# * Use YAML syntax to share snippets, like the old .travis.yml did
-# Sadly, as of 2021-02-01, Github Actions does not support anchors at
-# all. Just having an anchor results in an error:
-#
-#   The workflow is not valid. .github/workflows/tests.yml: Anchors
-#   are not currently supported. Remove the anchor 'an-strategy'
-#
-# The alternative of using composite actions doesn't work either,
-# because composite actions are limited to running shell scripts.
-# Steps in them can't call other actions with `uses:`, and nor can
-# they be conditional with `if:`.

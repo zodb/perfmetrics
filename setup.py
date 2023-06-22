@@ -6,9 +6,10 @@ from setuptools import find_packages
 from setuptools import Extension
 
 PYPY = hasattr(sys, 'pypy_version_info')
+PY312 = sys.version_info[:2] == (3, 12)
 
 def read(fname, here=os.path.dirname(__file__)):
-    with open(os.path.join(here, fname)) as f:
+    with open(os.path.join(here, fname), encoding='utf-8') as f:
         return f.read()
 
 README = read('README.rst')
@@ -16,10 +17,10 @@ CHANGES = read('CHANGES.rst')
 
 tests_require = [
     'zope.testrunner',
-    # nti.testing > ZODB > zodbpickle.
-    # But zodbpickle 2.1.0 doesn't build on 3.10.
-    # Still waiting on 2.2 (https://github.com/zopefoundation/zodbpickle/pull/61)
-    'nti.testing; python_version < "3.10"',
+    # nti.testing > ZODB > persistent -> cffi
+    # But cffi won't build on apple silicon on 3.12.
+    # Can't get persistent to build on PyPy 3.9 either.
+    'nti.testing; (python_version != "3.12" and platform_machine != "arm64" and platform_system != "Darwin") and platform_python_implementation != "PyPy"',
     # transitive dep of nti.testing, which we don't always have, but need
     # for our emulation
     'zope.schema',
@@ -79,7 +80,7 @@ if not PYPY:
     # (Not that this actually appears to do anything right now.)
 
     for mod_name, deps in (
-            ('metric', ()),
+        ('metric', ()),
     ):
         deps = ([_py_source(mod) for mod in deps]
                 + [_pxd(mod) for mod in deps]
@@ -124,7 +125,7 @@ if not PYPY:
 
 setup(
     name='perfmetrics',
-    version='3.3.1.dev0',
+    version='4.0.0.dev0',
     author='Shane Hathaway',
     author_email='shane@hathawaymix.org',
     maintainer='Jason Madden',
@@ -132,20 +133,19 @@ setup(
     description='Send performance metrics about Python code to Statsd',
     keywords="statsd metrics performance monitoring",
     long_description=README + '\n\n' + CHANGES,
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*",
+    python_requires=">=3.7",
     # Get strings from https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: Repoze Public License",
