@@ -36,10 +36,22 @@ environment:
 
 
   matrix:
-    # Pre-installed Python versions, which Appveyor may upgrade to
-    # a later point release.
+    # http://www.appveyor.com/docs/installed-software#python
 
-    # 64-bit
+    # Fully supported 64-bit versions, with testing. This should be
+    # all the current (non EOL) versions.
+    - PYTHON: "C:\\Python312-x64"
+      PYTHON_VERSION: "3.12.0b3"
+      PYTHON_ARCH: "64"
+      PYTHON_EXE: python
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+
+    - PYTHON: "C:\\Python311-x64"
+      PYTHON_VERSION: "3.11.0"
+      PYTHON_ARCH: "64"
+      PYTHON_EXE: python
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+
     - PYTHON: "C:\\Python310-x64"
       PYTHON_VERSION: "3.10.0"
       PYTHON_ARCH: "64"
@@ -52,11 +64,6 @@ environment:
       PYTHON_EXE: python
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
 
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.13
-      PYTHON_ARCH: "64"
-      PYTHON_EXE: python
-
     - PYTHON: "C:\\Python38-x64"
       PYTHON_VERSION: "3.8.x"
       PYTHON_ARCH: "64"
@@ -68,11 +75,6 @@ environment:
       PYTHON_ARCH: "64"
       PYTHON_EXE: python
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-
-    - PYTHON: "C:\\Python36-x64"
-      PYTHON_VERSION: "3.6.x" # currently 3.6.8
-      PYTHON_ARCH: "64"
-      PYTHON_EXE: python
 
     # 32-bit, wheel only (no testing)
     - PYTHON: "C:\\Python39"

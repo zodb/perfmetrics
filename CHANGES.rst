@@ -2,10 +2,12 @@
  CHANGES
 =========
 
-3.3.1 (unreleased)
+4.0.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Drop support for obsolete Python versions, including Python 2.7 and
+  3.6.
+- Add support for Python 3.12.
 
 
 3.3.0 (2022-09-25)
