@@ -189,7 +189,6 @@ jobs:
         with:
           platforms: all
       - name: Build and test perfmetrics
-      - name: Build and test perfmetrics
         env:
           DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}
         run: bash ./scripts/releases/make-manylinux
