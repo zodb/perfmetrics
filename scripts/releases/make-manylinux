@@ -17,6 +17,8 @@ export CXXFLAGS="-pipe -O3 -DNDEBUG"
 
 if [ -d /io -a -d /opt/python ]; then
     # Running inside docker
+    # 2024-06-11: git started complaining "fatal: detected dubious ownership in repository at '/io/.git'"
+    git config --global --add safe.directory /io/.git
     cd /io
     rm -rf wheelhouse
     mkdir wheelhouse
