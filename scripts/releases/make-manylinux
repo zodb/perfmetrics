@@ -29,8 +29,8 @@ if [ -d /io -a -d /opt/python ]; then
         git clone /io io
         cd io
         $variant/bin/pip install -U pip
-        $variant/bin/pip install -U 'cython>=3.0.10' setuptools build wheel
-        PATH=$variant/bin:$PATH $variant/bin/python -m pip build --wheel
+        $variant/bin/pip install -U 'cython>=3.0.10' setuptools build wheel persistent zope.interface zope.proxy
+        PATH=$variant/bin:$PATH $variant/bin/python -m build --wheel
         auditwheel show dist/perfmetrics*.whl
         auditwheel repair dist/perfmetrics*.whl
         cp wheelhouse/perfmetrics*.whl /io/wheelhouse
