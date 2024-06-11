@@ -17,21 +17,25 @@ export CXXFLAGS="-pipe -O3 -DNDEBUG"
 
 if [ -d /io -a -d /opt/python ]; then
     # Running inside docker
+    # 2024-06-11: git started complaining "fatal: detected dubious ownership in repository at '/io/.git'"
+    git config --global --add safe.directory /io/.git
     cd /io
     rm -rf wheelhouse
     mkdir wheelhouse
-    for variant in `ls -d /opt/python/cp{37,38,39,310,311,312}*`; do
+    # non-gil won't build, seems like a cython issue.
+    rm -f /opt/python/cp313-cp313t
+    for variant in `ls -d /opt/python/cp{38,39,310,311,312,313}*`; do
         echo "Building $variant"
         mkdir /tmp/build
         cd /tmp/build
         git clone /io io
         cd io
         $variant/bin/pip install -U pip
-        $variant/bin/pip install -U 'cython>=3.0b3' setuptools
-        PATH=$variant/bin:$PATH $variant/bin/python setup.py bdist_wheel
-        auditwheel show dist/*.whl
-        auditwheel repair dist/*.whl
-        cp wheelhouse/*.whl /io/wheelhouse
+        $variant/bin/pip install -U 'cython>=3.0.10' setuptools build wheel
+        PATH=$variant/bin:$PATH $variant/bin/python -m build --wheel
+        auditwheel show dist/perfmetrics*.whl
+        auditwheel repair dist/perfmetrics*.whl
+        cp wheelhouse/perfmetrics*.whl /io/wheelhouse
         cd /io
         rm -rf /tmp/build
     done

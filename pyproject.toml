@@ -19,5 +19,5 @@ requires = [
      # failing in Python 2 (https://travis-ci.org/github/gevent/gevent/jobs/683782800);
      # This was fixed in 3.0a5 (https://github.com/cython/cython/issues/3578)
      # 3.0a6 fixes an issue cythonizing source on 32-bit platforms
-     "Cython >= 3.0b3; platform_python_implementation == 'CPython'",
+     "Cython >= 3.0.10; platform_python_implementation == 'CPython'",
 ]
