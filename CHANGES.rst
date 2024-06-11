@@ -7,6 +7,7 @@
 
 - Add support for Python 3.13.
 - Drop support for Python 3.7.
+- Drop support for Manylinux 2010 wheels.
 
 4.0.0 (2023-06-22)
 ==================

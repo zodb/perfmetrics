@@ -18,10 +18,9 @@ CHANGES = read('CHANGES.rst')
 tests_require = [
     'zope.testrunner',
     # nti.testing > ZODB > persistent -> cffi
-    # But cffi won't build on apple silicon on 3.12.
-    # Can't get persistent to build on PyPy 3.9 either.
-    #'nti.testing; (python_version != "3.12" and platform_machine != "arm64" and platform_system != "Darwin") and platform_python_implementation != "PyPy"',
-    'nti.testing',
+    # CffI won't build on 3.13 yet; persistent is having trouble on PyPy
+    'nti.testing; python_version != "3.13" and platform_python_implementation != "PyPy"',
+
     # transitive dep of nti.testing, which we don't always have, but need
     # for our emulation
     'zope.schema',
