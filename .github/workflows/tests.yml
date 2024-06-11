@@ -86,6 +86,13 @@ jobs:
         exclude:
           - os: macos-latest
             python-version: pypy-3.10
+          - os: macos-latest
+            python-version: "3.8"
+          - os: macos-latest
+            python-version: "3.9"
+
+          - os: ubuntu-latest
+            python-version: pypy-3.10
     steps:
       - name: checkout
         uses: actions/checkout@v4
