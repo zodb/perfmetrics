@@ -29,11 +29,11 @@ if [ -d /io -a -d /opt/python ]; then
         git clone /io io
         cd io
         $variant/bin/pip install -U pip
-        $variant/bin/pip install -U 'cython>=3.0.10' setuptools wheel
-        PATH=$variant/bin:$PATH $variant/bin/python -m pip wheel --wheel-dir ./dist .
-        auditwheel show dist/*.whl
-        auditwheel repair dist/*.whl
-        cp wheelhouse/*.whl /io/wheelhouse
+        $variant/bin/pip install -U 'cython>=3.0.10' setuptools build wheel
+        PATH=$variant/bin:$PATH $variant/bin/python -m pip build --wheel
+        auditwheel show dist/perfmetrics*.whl
+        auditwheel repair dist/perfmetrics*.whl
+        cp wheelhouse/perfmetrics*.whl /io/wheelhouse
         cd /io
         rm -rf /tmp/build
     done

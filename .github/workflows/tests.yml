@@ -107,14 +107,14 @@ jobs:
       - name: Install Build Dependencies
         run: |
           pip install -U pip
-          pip install -U setuptools wheel twine
-          pip install -U 'cython>=3.0b3'
+          pip install -U setuptools wheel twine build
+          pip install -U 'cython>=3.0.10'
           pip install -U coverage
 
       - name: Install perfmetrics (non-Mac)
         if: ${{ ! startsWith(runner.os, 'Mac') }}
         run: |
-          python setup.py bdist_wheel
+          python -m build
           python -m pip install -U -e ".[test,docs]"
         env:
           # Ensure we test with assertions enabled.
@@ -127,7 +127,7 @@ jobs:
       - name: Install perfmetrics (Mac)
         if: startsWith(runner.os, 'Mac')
         run: |
-          python setup.py bdist_wheel
+          python -m build
           python -m pip install -U -e ".[test,docs]"
         env:
           # Unlike the above, we are actually distributing these
