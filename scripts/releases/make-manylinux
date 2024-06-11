@@ -22,7 +22,7 @@ if [ -d /io -a -d /opt/python ]; then
     cd /io
     rm -rf wheelhouse
     mkdir wheelhouse
-    for variant in `ls -d /opt/python/cp{37,38,39,310,311,312,313}*`; do
+    for variant in `ls -d /opt/python/cp{38,39,310,311,312,313}*`; do
         echo "Building $variant"
         mkdir /tmp/build
         cd /tmp/build
