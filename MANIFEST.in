@@ -24,6 +24,7 @@ include *.txt
 recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs Makefile
+recursive-include docs *.css
 
 recursive-include scripts/releases *
 recursive-include scripts *.cmd

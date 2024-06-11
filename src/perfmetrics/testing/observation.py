@@ -32,7 +32,7 @@ def _as_metric(metric_data):
     """
     Parses a single metric packet, *metric_data*, in to a `Metric`.
 
-    Metrics take the form of <name>:<value>|<type>(|@<sampling_rate>)
+    Metrics take the form of ``<name>:<value>|<type>(|@<sampling_rate>)``
 
     A `ValueError` is raised for invalid data
     """

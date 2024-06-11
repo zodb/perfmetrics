@@ -42,6 +42,7 @@ rqmt = pkg_resources.require('perfmetrics')[0]
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
@@ -85,7 +86,7 @@ release = rqmt.version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -113,7 +114,7 @@ add_function_parentheses = True
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
 #
-add_module_names = False
+add_module_names = True
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -138,9 +139,19 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-import sphinx_rtd_theme
-html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+html_theme = 'furo'
+
+html_css_files = [
+    'custom.css',
+]
+
+html_theme_options = {
+    'light_css_variables': {
+        'font-stack': '"SF Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji"',
+        'font-stack--monospace': '"JetBrainsMono", "JetBrains Mono", "JetBrains Mono Regular", "JetBrainsMono-Regular", ui-monospace, profont, monospace',
+    },
+}
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -353,16 +364,26 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
+
+
 intersphinx_mapping = {
-    'https://docs.python.org/': None,
-}
+     'python': ('http://docs.python.org/', None,),
+ }
 
 extlinks = {'issue': ('https://github.com/zodb/perfmetrics/issues/%s',
                       'issue #'),
             'pr': ('https://github.com/zodb/perfmetrics/pull/%s',
                    'pull request #')}
 
+
+# Sphinx 1.8+ prefers this to `autodoc_default_flags`. It's documented that
+# either True or None mean the same thing as just setting the flag, but
+# only None works in 1.8 (True works in 2.0)
 autodoc_default_options = {
-    'members': True,
+    'members': None,
     'show-inheritance': True,
+    'private-members': None,
+    'special-members': '__enter__, __exit__',
 }
+autodoc_member_order = 'groupwise'
+autoclass_content = 'both'
