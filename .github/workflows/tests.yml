@@ -107,8 +107,6 @@ jobs:
           pip install -U setuptools wheel twine build
           pip install -U 'cython>=3.0.10'
           pip install -U coverage
-          pip install -U cffi
-          pip install -U persistent zope.interface zope.proxy
       - name: Install perfmetrics (non-Mac)
         if: ${{ ! startsWith(runner.os, 'Mac') }}
         run: |

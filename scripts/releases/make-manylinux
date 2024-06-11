@@ -22,6 +22,8 @@ if [ -d /io -a -d /opt/python ]; then
     cd /io
     rm -rf wheelhouse
     mkdir wheelhouse
+    # non-gil won't build, seems like a cython issue.
+    rm -f /opt/python/cp313-cp313t
     for variant in `ls -d /opt/python/cp{38,39,310,311,312,313}*`; do
         echo "Building $variant"
         mkdir /tmp/build
