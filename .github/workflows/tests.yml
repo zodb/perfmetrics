@@ -81,21 +81,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [pypy-3.10, 3.8, 3.9, '3.10', '3.11', "3.12", "3.13.0-beta.1"]
+        python-version: [pypy-3.11, '3.10', '3.11', "3.12", "3.13", "3.14.0-rc.3"]
         os: [ubuntu-latest, macos-latest]
         exclude:
           - os: macos-latest
-            python-version: pypy-3.10
-          - os: macos-latest
-            python-version: "3.8"
-          - os: macos-latest
-            python-version: "3.9"
+            python-version: pypy-3.11
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -178,14 +174,14 @@ jobs:
           - manylinux2014_ppc64le
           - manylinux2014_s390x
           - manylinux2014_x86_64
-          - musllinux_1_1_x86_64
-          - musllinux_1_1_aarch64
+          - musllinux_1_2_x86_64
+          - musllinux_1_2_aarch64
     name: ${{ matrix.image }}
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up QEMU

@@ -6,7 +6,6 @@ from setuptools import find_packages
 from setuptools import Extension
 
 PYPY = hasattr(sys, 'pypy_version_info')
-PY312 = sys.version_info[:2] == (3, 12)
 
 def read(fname, here=os.path.dirname(__file__)):
     with open(os.path.join(here, fname), encoding='utf-8') as f:
@@ -129,23 +128,22 @@ setup(
     author='Shane Hathaway',
     author_email='shane@hathawaymix.org',
     maintainer='Jason Madden',
-    maintainer_email='jason@nextthought.com',
+    maintainer_email='jason@seecoresoftware.com',
     description='Send performance metrics about Python code to Statsd',
     keywords="statsd metrics performance monitoring",
     long_description=README + '\n\n' + CHANGES,
-    python_requires=">=3.7",
+    python_requires=">=3.10",
     # Get strings from https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: Repoze Public License",
