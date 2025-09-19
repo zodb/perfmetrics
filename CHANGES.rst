@@ -2,7 +2,7 @@
  CHANGES
 =========
 
-4.2.0 (unreleased)
+4.2.0 (2025-09-19)
 ==================
 
 - Drop support for Python 3.8 and 3.9.
