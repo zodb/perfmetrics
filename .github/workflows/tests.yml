@@ -134,7 +134,7 @@ jobs:
           twine check dist/*
 
       - name: Upload perfmetrics wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: perfmetrics-${{ runner.os }}-${{ matrix.python-version }}.whl
           path: dist/*whl
@@ -185,7 +185,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: all
       - name: Build and test perfmetrics
@@ -193,7 +193,7 @@ jobs:
           DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}
         run: bash ./scripts/releases/make-manylinux
       - name: Store perfmetrics wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: wheelhouse/*whl
           name: ${{ matrix.image }}_wheels.zip
