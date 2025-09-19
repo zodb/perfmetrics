@@ -242,8 +242,8 @@ class TestStatsdClientMod(TestStatsdClient):
 
     def _makeOne(self, *args, **kwargs):
         from perfmetrics.statsd import StatsdClient
-        kwargs['kind'] = super(TestStatsdClientMod, self)._class
-        wrapped = super(TestStatsdClientMod, self)._makeOne(*args, **kwargs)
+        kwargs['kind'] = super()._class
+        wrapped = super()._makeOne(*args, **kwargs)
         assert type(wrapped) is StatsdClient # pylint:disable=unidiomatic-typecheck
         # Be sure to use a format string that alters the stat name so we
         # can prove the method is getting called. With __getattr__ there, we could

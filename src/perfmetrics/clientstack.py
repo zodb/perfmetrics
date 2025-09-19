@@ -43,8 +43,7 @@ class ClientStack(threading.local):
 
     def pop(self):
         stack = self.stack
-        if stack:
-            return stack.pop()
+        return stack.pop() if stack else None
 
     def clear(self):
         del self.stack[:]

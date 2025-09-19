@@ -77,7 +77,7 @@ class StatsdClient(object):
         self.udp_sock = socket.socket(family, socktype, proto)
         self.random = random.random  # Testing hook
         if prefix and not prefix.endswith('.'):
-            prefix = prefix + '.'
+            prefix += '.'
         self.prefix = prefix
 
     def close(self):
@@ -178,7 +178,7 @@ class StatsdClientMod(object):
         'format',
     )
 
-    def __init__(self, wrapped, format):
+    def __init__(self, wrapped, format): # pylint: disable=redefined-builtin
         self._wrapped = wrapped
         self.format = format
 

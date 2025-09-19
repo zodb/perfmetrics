@@ -77,7 +77,7 @@ class TestDisabledDecorators(unittest.TestCase):
     def test_metric(self):
 
         def func():
-            'does nothing'
+            """does nothing"""
 
         func2 = self.perfmetrics.metric(func)
         self.assertIs(func, func2)
@@ -85,7 +85,7 @@ class TestDisabledDecorators(unittest.TestCase):
     def test_metricmethod(self):
 
         def func():
-            'does nothing'
+            """does nothing"""
 
         func2 = self.perfmetrics.metricmethod(func)
         self.assertIs(func, func2)
@@ -93,7 +93,7 @@ class TestDisabledDecorators(unittest.TestCase):
     def test_Metric(self):
 
         def func():
-            'does nothing'
+            """does nothing"""
 
         func2 = self.perfmetrics.Metric()(func)
         self.assertIs(func, func2)
@@ -101,7 +101,7 @@ class TestDisabledDecorators(unittest.TestCase):
     def test_MetricMod(self):
 
         def func():
-            'does nothing'
+            """does nothing"""
 
         func2 = self.perfmetrics.MetricMod('%s')(func)
         self.assertIs(func, func2)

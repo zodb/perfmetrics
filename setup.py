@@ -17,8 +17,8 @@ CHANGES = read('CHANGES.rst')
 tests_require = [
     'zope.testrunner',
     # nti.testing > ZODB > persistent -> cffi
-    # CffI won't build on 3.13 yet; persistent is having trouble on PyPy
-    'nti.testing; python_version != "3.13" and platform_python_implementation != "PyPy"',
+
+    'nti.testing',
 
     # transitive dep of nti.testing, which we don't always have, but need
     # for our emulation

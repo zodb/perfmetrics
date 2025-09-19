@@ -107,7 +107,7 @@ class _GivenStatMetricImpl(_AbstractMetricImpl):
     )
     def __init__(self, stat_name, *args):
         self.stat_name = stat_name
-        super(_GivenStatMetricImpl, self).__init__(*args)
+        super().__init__(*args)
 
     def _compute_stat(self, args): # pragma: no cover
         return self.stat_name
@@ -119,7 +119,7 @@ class _MethodMetricImpl(_AbstractMetricImpl):
 
     def __init__(self, *args):
         self.klass_dict = WeakKeyDictionary()
-        super(_MethodMetricImpl, self).__init__(*args)
+        super().__init__(*args)
 
     def _compute_stat(self, args):
         klass = args[0].__class__
@@ -247,7 +247,7 @@ class MetricMod(object):
     format is a format string such as 'XYZ.%s'.
     """
 
-    def __init__(self, format):
+    def __init__(self, format): # pylint: disable=redefined-builtin
         self.format = format
 
     def __call__(self, f):
