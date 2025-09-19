@@ -52,7 +52,7 @@ class FakeStatsDClient(StatsdClient):
         """
         Create a mock statsd client with the given prefix.
         """
-        super(FakeStatsDClient, self).__init__(prefix=prefix)
+        super().__init__(prefix=prefix)
 
         # Monkey patch the socket to track things in memory instead
         self.udp_sock.close()
