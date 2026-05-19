@@ -199,7 +199,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
         with:
           platforms: all
       - name: Build and test perfmetrics
@@ -207,7 +207,7 @@ jobs:
           DOCKER_IMAGE: quay.io/pypa/${{ matrix.image }}
         run: bash ./scripts/releases/make-manylinux
       - name: Store perfmetrics wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           path: wheelhouse/*whl
           name: ${{ matrix.image }}_wheels.zip
