@@ -110,6 +110,7 @@ if not PYPY:
                 'language_level': '3str',
                 'always_allow_keywords': False,
                 'nonecheck': False,
+                'freethreading_compatible': True,
             },
         )
     except ValueError:
@@ -124,7 +125,7 @@ if not PYPY:
 
 setup(
     name='perfmetrics',
-    version='4.2.1.dev0',
+    version='4.3.0.dev0',
     author='Shane Hathaway',
     author_email='shane@hathawaymix.org',
     maintainer='Jason Madden',
@@ -144,6 +145,7 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3.15",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "License :: Repoze Public License",
@@ -163,7 +165,6 @@ setup(
     zip_safe=True,
     tests_require=tests_require,
     install_requires=[
-        'setuptools',
     ],
     extras_require={
         'test': tests_require,
