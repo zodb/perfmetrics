@@ -2,7 +2,7 @@
  CHANGES
 =========
 
-4.3.0 (unreleased)
+4.3.0 (2026-05-19)
 ==================
 
 - Add support for Python 3.15. This will be the last major release to
