@@ -32,7 +32,6 @@
 
 import os
 import sys
-import pkg_resources
 import importlib.metadata
 os.environ['PURE_PYTHON'] = '1'
 

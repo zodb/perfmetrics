@@ -8,6 +8,7 @@
 - Add support for Python 3.15. This will be the last major release to
   support Python 3.10.
 - Add support for free-threaded Python 3.14 and 3.15.
+- Remove dependency on ``setuptools``.
 
 
 4.2.0 (2025-09-19)
